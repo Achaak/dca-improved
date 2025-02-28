@@ -1,3 +1,4 @@
+import type { Config } from "./types";
 import { formatBTC, formatUSD, getNbBTC } from "./utils";
 
 export function buy(

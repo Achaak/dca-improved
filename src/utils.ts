@@ -1,4 +1,5 @@
 import path from "path";
+import type { Config, Data, Transaction } from "./types";
 
 export function getAverageCost(transactions: Transaction[], date: Date) {
   let sum = 0;

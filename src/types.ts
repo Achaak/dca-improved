@@ -1,4 +1,4 @@
-type Transaction = {
+export type Transaction = {
   amountBTC: number;
   price: number;
   date: Date;
@@ -6,7 +6,7 @@ type Transaction = {
   feeUSD: number;
 };
 
-interface Config {
+export interface Config {
   fee: number;
   instrument: string;
   DCA_Value: number;
@@ -18,7 +18,7 @@ interface Config {
   investmentUSD: number;
 }
 
-interface Data {
+export interface Data {
   timestamp: number;
   open: number;
   high: number;
