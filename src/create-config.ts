@@ -1,4 +1,4 @@
-import { exec } from "child_Bun";
+import { exec } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
 
@@ -16,7 +16,7 @@ const defaultConfig: Config = {
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
-let configFileName = "config.json"; // Default config file name
+let configFileName = "config"; // Default config file name
 let instrument = defaultConfig.instrument;
 let startDate = defaultConfig.start_date;
 let endDate = defaultConfig.end_date;
@@ -55,7 +55,7 @@ async function createConfigFile() {
 
   await new Promise<void>((resolve, reject) => {
     exec(
-      `pnpm dukascopy-node -i ${instrument} -from ${startDate} -to ${endDate} -t mn1 -f json --cache --file-name ${dataFile}`,
+      `bunx dukascopy-node -i ${instrument} -from ${startDate} -to ${endDate} -t mn1 -f json --cache --file-name ${dataFile}`,
       (error, stdout, stderr) => {
         if (error) {
           console.error(`Error executing command: ${error.message}`);
