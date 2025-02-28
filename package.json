@@ -1,0 +1,17 @@
+{
+  "name": "quickstart",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start:dca": "bun run src/DCA.ts",
+    "start:dca-improved": "bun run src/DCA_improved.ts",
+    "create-config": "bun run src/create-config.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.13.5"
+  },
+  "dependencies": {
+    "dukascopy-node": "^1.42.0"
+  }
+}
