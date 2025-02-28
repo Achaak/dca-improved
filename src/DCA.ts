@@ -1,5 +1,5 @@
 import { buy } from "./transaction";
-import { deposit, getData, getNbBTC, showStats } from "./utils";
+import { deposit, getData, showStats } from "./utils";
 import { getConfig } from "./config";
 
 const config = await getConfig();
@@ -10,16 +10,9 @@ const data = await getData({
 });
 
 for (const d of data) {
-  deposit(config.DCA_Value, config);
-
   const date = new Date(d.timestamp);
-
+  deposit(config.DCA_Value, date, config);
   buy(config.DCA_Value, d.close, date, config);
 }
-
-const nbBTC = getNbBTC(
-  config.transactions,
-  new Date(data[data.length - 1].timestamp)
-);
 
 showStats(config, data[data.length - 1].close);

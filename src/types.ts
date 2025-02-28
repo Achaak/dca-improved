@@ -1,10 +1,7 @@
-export type Transaction = {
-  amountBTC: number;
-  price: number;
-  date: Date;
-  type: "buy" | "sell";
-  feeUSD: number;
-};
+export type Transaction =
+  | { amountBTC: number; price: number; date: Date; type: "buy"; feeUSD: number; }
+  | { amountBTC: number; price: number; date: Date; type: "sell"; feeUSD: number; }
+  | { amountUSD: number; date: Date; type: "deposit" | "withdraw"; };
 
 export interface Config {
   fee: number;
@@ -14,8 +11,6 @@ export interface Config {
   end_date: string;
   transactions: Transaction[];
   dataFile: string;
-  balanceUSD: number;
-  investmentUSD: number;
 }
 
 export interface Data {

@@ -6,11 +6,11 @@ export function getAverageCost(transactions: Transaction[], date: Date) {
   let nb = 0;
 
   let allBuy = structuredClone(transactions)
-    .filter((t) => t.type === "buy" && t.date <= date)
+    .filter((t): t is Extract<Transaction, { type: "buy" }> => t.type === 'buy' && t.date <= date)
     .sort((a, b) => a.price - b.price);
 
   let totalBTCSell = structuredClone(transactions)
-    .filter((t) => t.type === "sell" && t.date <= date)
+    .filter((t): t is Extract<Transaction, { type: 'sell' }> => t.type === "sell" && t.date <= date)
     .reduce((acc, t) => acc + t.amountBTC, 0);
 
   for (const b of allBuy) {
@@ -49,8 +49,43 @@ export function getNbBTC(transactions: Transaction[], date: Date) {
 
     if (t.type === "buy") {
       return acc + t.amountBTC;
-    } else {
+    } else if (t.type === "sell") {
       return acc - t.amountBTC;
+    } else {
+      return acc;
+    }
+  }, 0);
+}
+
+export function getNbUSD(transactions: Transaction[], date: Date) {
+  return transactions.reduce((acc, t) => {
+    if (t.date > date) {
+      return acc;
+    }
+
+    switch (t.type) {
+      case "deposit":
+        return acc + t.amountUSD;
+      case "withdraw":
+        return acc - t.amountUSD;
+      case "buy":
+        return acc - t.amountBTC * t.price - t.feeUSD;
+      case "sell":
+        return acc + t.amountBTC * t.price - t.feeUSD;
+    }
+  }, 0);
+}
+
+export function getInvestmentsUSD(transactions: Transaction[], date: Date) {
+  return transactions.reduce((acc, t) => {
+    if (t.date > date) {
+      return acc;
+    }
+
+    if (t.type === "deposit") {
+      return acc + t.amountUSD;
+    } else {
+      return acc;
     }
   }, 0);
 }
@@ -68,30 +103,49 @@ export function formatBTC(amount: number) {
   });
 }
 
-export function deposit(amountUSD: number, config: Config) {
-  config.balanceUSD += amountUSD;
-  config.investmentUSD += amountUSD;
+export function deposit(amountUSD: number, date: Date, config: Config) {
+  config.transactions.push({
+    amountUSD,
+    date,
+    type: "deposit",
+  });
+}
+
+export function withdraw(amountUSD: number, date: Date, config: Config) {
+  const balanceUSD = getNbUSD(config.transactions, date);
+
+  if (balanceUSD < amountUSD) {
+    console.error(`Not enough balance to withdraw ${formatUSD(amountUSD)}, only ${formatUSD(balanceUSD)} available`);
+    return;
+  }
+
+  config.transactions.push({
+    amountUSD,
+    date,
+    type: "withdraw",
+  });
 }
 
 export function showStats(config: Config, actualPrice: number) {
   const date = config.transactions[config.transactions.length - 1].date;
-  const balanceUSD = config.balanceUSD;
+  const balanceUSD = getNbUSD(config.transactions, date);
+  const investmentUSD = getInvestmentsUSD(config.transactions, date);
   const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
   const totalUSD = balanceUSD + btcToUSD;
 
   console.log({
-    balanceUSD: formatUSD(config.balanceUSD),
+    balanceUSD: formatUSD(balanceUSD),
     nbBTC: formatBTC(getNbBTC(config.transactions, date)),
     averageCost: formatUSD(getAverageCost(config.transactions, date)),
     totalUSD: formatUSD(totalUSD),
-    investmentUSD: formatUSD(config.investmentUSD),
-    profitUSD: formatUSD(totalUSD - config.investmentUSD),
+    investmentUSD: formatUSD(investmentUSD),
+    profitUSD: formatUSD(totalUSD - investmentUSD),
     profitPercentage: `${(
-      ((totalUSD - config.investmentUSD) / config.investmentUSD) *
+      ((totalUSD - investmentUSD) / investmentUSD) *
       100
     ).toFixed(2)}%`,
-    nbSell: config.transactions.filter((t) => t.type === "sell").length,
-    nbBuy: config.transactions.filter((t) => t.type === "buy").length,
+    nbSell: config.transactions.filter((t) => t.type === "sell" && t.date <= date).length,
+    nbBuy: config.transactions.filter((t) => t.type === "buy" && t.date <= date).length,
   });
 }
 
