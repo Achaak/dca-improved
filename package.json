@@ -11,6 +11,7 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "dukascopy-node": "^1.42.0"
+    "dukascopy-node": "^1.42.0",
+    "typescript": "^5.8.2"
   }
 }

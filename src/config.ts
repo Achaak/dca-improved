@@ -2,6 +2,8 @@ import path from "path";
 import { promises as fs } from "fs";
 import type { Config } from "./types";
 
+export const SHOW_LOGS = Bun.env["SHOW_LOGS"] === "true" || Bun.env["SHOW_LOGS"] === "1";
+
 export async function getConfig() {
   const args = Bun.argv.slice(2);
   const configFileName = getConfigFileName(args) ?? "config.json";

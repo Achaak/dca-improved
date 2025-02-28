@@ -1,5 +1,6 @@
+import { SHOW_LOGS } from "./config";
 import type { Config } from "./types";
-import { formatBTC, formatUSD, getNbBTC } from "./utils";
+import { formatBTC, formatUSD, getNbBTC, getNbUSD } from "./utils";
 
 export function buy(
   amountUSD: number,
@@ -15,12 +16,13 @@ export function buy(
   const feeUSD = amountUSD * config.fee;
   const amountBTCMinusFee = (amountUSD - feeUSD) / price;
 
-  if (config.balanceUSD < amountUSD) {
+  const balanceUSD = getNbUSD(config.transactions, date);
+
+  if (balanceUSD < amountUSD) {
     console.error("Not enough balance");
     return;
   }
 
-  config.balanceUSD -= amountUSD;
   config.transactions.push({
     amountBTC: amountBTCMinusFee,
     price,
@@ -29,7 +31,7 @@ export function buy(
     feeUSD: feeUSD,
   });
 
-  if (Bun.env.LOGS) {
+  if (SHOW_LOGS) {
     console.log(
       `\x1b[32m Bought ${formatBTC(amountBTCMinusFee)} BTC for ${formatUSD(
         amountUSD
@@ -58,7 +60,6 @@ export function sell(
   const amountUSD = amountBTC * price;
   const feeUSD = amountUSD * config.fee;
 
-  config.balanceUSD += amountUSD - feeUSD;
   config.transactions.push({
     amountBTC,
     price,
@@ -67,7 +68,7 @@ export function sell(
     feeUSD,
   });
 
-  if (Bun.env.LOGS) {
+  if (SHOW_LOGS) {
     console.log(
       `\x1b[31m Sold ${formatBTC(amountBTC)} BTC for ${formatUSD(
         amountUSD
