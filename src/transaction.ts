@@ -28,7 +28,7 @@ export function buy(
     feeUSD: feeUSD,
   });
 
-  if (process.env.LOGS) {
+  if (Bun.env.LOGS) {
     console.log(
       `\x1b[32m Bought ${formatBTC(amountBTCMinusFee)} BTC for ${formatUSD(
         amountUSD
@@ -66,7 +66,7 @@ export function sell(
     feeUSD,
   });
 
-  if (process.env.LOGS) {
+  if (Bun.env.LOGS) {
     console.log(
       `\x1b[31m Sold ${formatBTC(amountBTC)} BTC for ${formatUSD(
         amountUSD

@@ -2,7 +2,7 @@ import path from "path";
 import { promises as fs } from "fs";
 
 export async function getConfig() {
-  const args = process.argv.slice(2);
+  const args = Bun.argv.slice(2);
   const configFileName = getConfigFileName(args) || "config.json";
   const configFilePath = path.join(__dirname, "../config", configFileName);
 

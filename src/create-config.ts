@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+import { exec } from "child_Bun";
 import path from "path";
 import { promises as fs } from "fs";
 
@@ -15,7 +15,7 @@ const defaultConfig: Config = {
 };
 
 // Parse command line arguments
-const args = process.argv.slice(2);
+const args = Bun.argv.slice(2);
 let configFileName = "config.json"; // Default config file name
 let instrument = defaultConfig.instrument;
 let startDate = defaultConfig.start_date;

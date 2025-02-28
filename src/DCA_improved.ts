@@ -36,7 +36,7 @@ for (const d of data) {
     sell(totalBTCSell, price, date, config);
   }
 
-  if (process.env.LOGS) {
+  if (Bun.env.LOGS) {
     console.log(
       `\x1b[34m${date.toLocaleString()} - ${formatUSD(
         config.balanceUSD
