@@ -1,5 +1,5 @@
-import type { Config } from "./types";
-import { getDataFile, writeConfig } from "./config";
+import { getDataFile, writeConfig } from "../config";
+import type { Config } from "../types";
 
 const defaultConfig: Config = {
   fee: 0.001,

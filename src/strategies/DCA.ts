@@ -1,5 +1,4 @@
-import { buy } from "../transaction";
-import { deposit } from "../utils";
+import { buy, deposit } from "../transaction";
 import type { Config, Data } from "../types";
 
 export async function DCA(config: Config, data: Data[]) {

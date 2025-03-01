@@ -1,13 +1,14 @@
-import { buy, sell } from "../transaction";
 import {
+  buy,
   deposit,
-  formatUSD,
+  sell,
   getAverageCost,
   getNbBTC,
   getNbUSD,
-} from "../utils";
+} from "../transaction";
 import { SHOW_LOGS } from "../config";
 import type { Config, Data } from "../types";
+import { formatUSD } from "../utils/format";
 
 const RATIO_UNDER_TO_BUY = 2;
 const RATIO_OVER_TO_SELL = 2.5;

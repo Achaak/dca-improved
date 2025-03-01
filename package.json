@@ -3,11 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "start:dca": "bun run src/start-DCA.ts",
-    "start:dca-improved": "bun run src/start-DCA-improved.ts",
-    "start:compare": "bun run src/start-compare.ts",
-    "create-config": "bun run src/create-config.ts",
-    "update-config": "bun run src/update-config.ts"
+    "start:dca": "bun run src/scripts/start-DCA.ts",
+    "start:dca-improved": "bun run src/scripts/start-DCA-improved.ts",
+    "start:compare": "bun run src/scripts/start-compare.ts",
+    "start:compare:random": "bun run src/scripts/start-compare-random.ts",
+    "create-config": "bun run src/scripts/create-config.ts",
+    "update-config": "bun run src/scripts/update-config.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

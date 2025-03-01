@@ -24,13 +24,15 @@ export async function getConfig() {
   const config = configModule.default as Config;
 
   try {
-    await fs.access(path.join(dataDir, config.dataFile));
+    const dataFilePath = path.join(dataDir, config.dataFile);
+    await fs.access(dataFilePath);
   } catch {
+    console.log("Data file not found, downloading...");
     await getDataFile({
       instrument: config.instrument,
       start_date: config.start_date,
       end_date: config.end_date,
-      dataFileName: config.dataFile,
+      dataFileName: config.dataFile.split(".")[0],
     });
   }
 
@@ -63,7 +65,6 @@ export async function getDataFile({
   end_date: string;
   dataFileName: string;
 }) {
-  console.log(dataFileName);
   await new Promise<void>((resolve, reject) => {
     exec(
       `bunx dukascopy-node -i ${instrument} -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`,
@@ -78,7 +79,7 @@ export async function getDataFile({
           reject(new Error(stderr));
           return;
         }
-        console.log(`stdout: ${stdout}`);
+        console.log(stdout);
         resolve();
       }
     );

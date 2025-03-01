@@ -1,18 +1,12 @@
-import { deleteDataFile, getConfig, getDataFile, writeConfig } from "./config";
+import { deleteDataFile, getConfig, getDataFile, writeConfig } from "../config";
 
 const config = await getConfig();
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
-let configName = "config"; // Default config file name
 
 args.forEach((arg, index) => {
   switch (arg) {
-    case "-c":
-      if (index + 1 < args.length) {
-        configName = args[index + 1];
-      }
-      break;
     case "-s":
       if (index + 1 < args.length) {
         config.start_date = args[index + 1];
