@@ -12,11 +12,7 @@ export const SHOW_LOGS =
 export async function getConfig() {
   const args = Bun.argv.slice(2);
   const configName = getConfigName(args) ?? "config";
-  const configFilePath = path.join(
-    __dirname,
-    "../config",
-    `${configName}.json`
-  );
+  const configFilePath = path.join(configDir, `${configName}.json`);
 
   try {
     await fs.access(configFilePath);
@@ -25,7 +21,20 @@ export async function getConfig() {
   }
 
   const configModule = await import(configFilePath);
-  return configModule.default as Config;
+  const config = configModule.default as Config;
+
+  try {
+    await fs.access(path.join(dataDir, config.dataFile));
+  } catch {
+    await getDataFile({
+      instrument: config.instrument,
+      start_date: config.start_date,
+      end_date: config.end_date,
+      dataFileName: config.dataFile,
+    });
+  }
+
+  return config;
 }
 
 function getConfigName(args: string[], argName = "-c") {
