@@ -22,7 +22,7 @@ const nbOfDays = args.includes("--nb-of-days")
   : 365;
 
 const results = await Promise.all(
-  Array.from({ length: nbOfRuns }).map(async (_, index) => {
+  Array.from({ length: nbOfRuns }).map(async () => {
     const c = structuredClone(config);
     const d = structuredClone(data);
 
