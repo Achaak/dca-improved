@@ -18,7 +18,7 @@ export function buy(
 
   const balanceUSD = getNbUSD(config.transactions, date);
 
-  if (balanceUSD < amountUSD) {
+  if (balanceUSD < amountUSD && SHOW_LOGS) {
     console.error("Not enough balance");
     return;
   }
@@ -52,7 +52,7 @@ export function sell(
 ) {
   const nbBTC = getNbBTC(config.transactions, date);
 
-  if (nbBTC < amountBTC) {
+  if (nbBTC < amountBTC && SHOW_LOGS) {
     console.error("Not enough BTC");
     return;
   }

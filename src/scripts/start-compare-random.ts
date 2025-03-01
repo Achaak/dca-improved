@@ -17,13 +17,16 @@ const args = Bun.argv.slice(2);
 const nbOfRuns = args.includes("--nb-of-runs")
   ? parseInt(args[args.indexOf("--nb-of-runs") + 1])
   : 1;
+const nbOfDays = args.includes("--nb-of-days")
+  ? parseInt(args[args.indexOf("--nb-of-days") + 1])
+  : 365;
 
 const results = await Promise.all(
   Array.from({ length: nbOfRuns }).map(() => {
     const c = structuredClone(config);
     const d = structuredClone(data);
 
-    const randomDateRange = getRandomDateRange(c, 365 * 4);
+    const randomDateRange = getRandomDateRange(c, nbOfDays);
     c.start_date = randomDateRange.start_date;
     c.end_date = randomDateRange.end_date;
 
@@ -64,6 +67,7 @@ console.table({
     config.end_date
   ).toLocaleDateString()}`,
   "Actual Price": formatUSD(DCAMetricsAverage.actualPrice),
+  "Interval (days)": nbOfDays,
   "Number of Runs": nbOfRuns,
 });
 
