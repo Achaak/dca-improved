@@ -3,12 +3,11 @@ import {
   deposit,
   formatUSD,
   getAverageCost,
-  getData,
   getNbBTC,
   getNbUSD,
 } from "../utils";
 import { SHOW_LOGS } from "../config";
-import type { Config } from "../types";
+import type { Config, Data } from "../types";
 
 const RATIO_UNDER_TO_BUY = 2;
 const RATIO_OVER_TO_SELL = 2.5;
@@ -18,13 +17,7 @@ const NB_BTC_SELL_RATIOS = [
   0.25,
 ];
 
-export async function DCAImproved(config: Config) {
-  const data = await getData({
-    dataFile: config.dataFile,
-    startDate: new Date(config.start_date),
-    endDate: new Date(config.end_date),
-  });
-
+export async function DCAImproved(config: Config, data: Data[]) {
   for (const d of data) {
     const date = new Date(d.timestamp);
     const price = d.close;

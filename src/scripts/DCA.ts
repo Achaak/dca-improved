@@ -1,14 +1,8 @@
 import { buy } from "../transaction";
-import { deposit, getData } from "../utils";
-import type { Config } from "../types";
+import { deposit } from "../utils";
+import type { Config, Data } from "../types";
 
-export async function DCA(config: Config) {
-  const data = await getData({
-    dataFile: config.dataFile,
-    startDate: new Date(config.start_date),
-    endDate: new Date(config.end_date),
-  });
-
+export async function DCA(config: Config, data: Data[]) {
   for (const d of data) {
     const date = new Date(d.timestamp);
     deposit(config.DCA_Value, date, config);

@@ -1,10 +1,15 @@
 import { getConfig } from "./config";
 import { DCAImproved } from "./scripts/DCA_improved";
-import { showStats } from "./utils";
+import { getData, showStats } from "./utils";
 
 const config = await getConfig();
+const data = await getData({
+  dataFile: config.dataFile,
+  startDate: new Date(config.start_date),
+  endDate: new Date(config.end_date),
+});
 
-const { data, config: updatedConfig } = await DCAImproved(config);
+const { config: updatedConfig } = await DCAImproved(config, data);
 
 showStats({
   config: updatedConfig,

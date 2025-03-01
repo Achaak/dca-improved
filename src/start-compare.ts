@@ -4,6 +4,7 @@ import { DCAImproved } from "./scripts/DCA_improved";
 import type { Config, Data } from "./types";
 import {
   formatUSD,
+  getData,
   getInvestmentsUSD,
   getNbBTC,
   getNbOfBuys,
@@ -14,6 +15,11 @@ import {
 } from "./utils";
 
 const config = await getConfig();
+const data = await getData({
+  dataFile: config.dataFile,
+  startDate: new Date(config.start_date),
+  endDate: new Date(config.end_date),
+});
 
 const args = Bun.argv.slice(2);
 const isRandomDate = args.includes("--random-date");
@@ -51,13 +57,11 @@ if (isRandomDate) {
   config.end_date = randomDateRange.end_date;
 }
 
-const [
-  { data: dataDCAImproved, config: updatedConfigDCAImproved },
-  { data: dataDCA, config: updatedConfigDCA },
-] = await Promise.all([
-  DCAImproved(structuredClone(config)),
-  DCA(structuredClone(config)),
-]);
+const [{ config: updatedConfigDCAImproved }, { config: updatedConfigDCA }] =
+  await Promise.all([
+    DCAImproved(structuredClone(config), data),
+    DCA(structuredClone(config), data),
+  ]);
 
 const calculateMetrics = (data: Data[], updatedConfig: Config) => {
   const startDate = new Date(data[0].timestamp);
@@ -106,7 +110,7 @@ const {
   profitPercentage: profitPercentageDCA,
   nbOfSells: nbOfSellsDCA,
   nbOfBuys: nbOfBuysDCA,
-} = calculateMetrics(dataDCA, updatedConfigDCA);
+} = calculateMetrics(data, updatedConfigDCA);
 
 const {
   startDate: startDateDCAImproved,
@@ -120,7 +124,7 @@ const {
   profitPercentage: profitPercentageDCAImproved,
   nbOfSells: nbOfSellsDCAImproved,
   nbOfBuys: nbOfBuysDCAImproved,
-} = calculateMetrics(dataDCAImproved, updatedConfigDCAImproved);
+} = calculateMetrics(data, updatedConfigDCAImproved);
 
 const formatDifference = (value: number) => {
   return value > 0 ? `+${formatUSD(value)}` : formatUSD(value);
