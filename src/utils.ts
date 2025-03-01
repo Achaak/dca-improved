@@ -6,11 +6,17 @@ export function getAverageCost(transactions: Transaction[], date: Date) {
   let nb = 0;
 
   let allBuy = structuredClone(transactions)
-    .filter((t): t is Extract<Transaction, { type: "buy" }> => t.type === 'buy' && t.date <= date)
+    .filter(
+      (t): t is Extract<Transaction, { type: "buy" }> =>
+        t.type === "buy" && t.date <= date
+    )
     .sort((a, b) => a.price - b.price);
 
   let totalBTCSell = structuredClone(transactions)
-    .filter((t): t is Extract<Transaction, { type: 'sell' }> => t.type === "sell" && t.date <= date)
+    .filter(
+      (t): t is Extract<Transaction, { type: "sell" }> =>
+        t.type === "sell" && t.date <= date
+    )
     .reduce((acc, t) => acc + t.amountBTC, 0);
 
   for (const b of allBuy) {
@@ -115,7 +121,11 @@ export function withdraw(amountUSD: number, date: Date, config: Config) {
   const balanceUSD = getNbUSD(config.transactions, date);
 
   if (balanceUSD < amountUSD) {
-    console.error(`Not enough balance to withdraw ${formatUSD(amountUSD)}, only ${formatUSD(balanceUSD)} available`);
+    console.error(
+      `Not enough balance to withdraw ${formatUSD(amountUSD)}, only ${formatUSD(
+        balanceUSD
+      )} available`
+    );
     return;
   }
 
@@ -126,26 +136,47 @@ export function withdraw(amountUSD: number, date: Date, config: Config) {
   });
 }
 
-export function showStats(config: Config, actualPrice: number) {
+export function showStats({
+  config,
+  actualPrice,
+  startDate,
+  endDate,
+}: {
+  config: Config;
+  actualPrice: number;
+  startDate: Date;
+  endDate: Date;
+}) {
   const date = config.transactions[config.transactions.length - 1].date;
   const balanceUSD = getNbUSD(config.transactions, date);
   const investmentUSD = getInvestmentsUSD(config.transactions, date);
   const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
   const totalUSD = balanceUSD + btcToUSD;
 
-  console.log({
-    balanceUSD: formatUSD(balanceUSD),
-    nbBTC: formatBTC(getNbBTC(config.transactions, date)),
-    averageCost: formatUSD(getAverageCost(config.transactions, date)),
-    totalUSD: formatUSD(totalUSD),
-    investmentUSD: formatUSD(investmentUSD),
-    profitUSD: formatUSD(totalUSD - investmentUSD),
-    profitPercentage: `${(
+  console.table({
+    Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+    "Balance (USD)": formatUSD(balanceUSD),
+    "Number of BTC": formatBTC(getNbBTC(config.transactions, date)),
+    "Average Cost (USD)": formatUSD(getAverageCost(config.transactions, date)),
+    "Total Value (USD)": formatUSD(totalUSD),
+  });
+
+  console.table({
+    "Investment (USD)": formatUSD(investmentUSD),
+    "Profit (USD)": formatUSD(totalUSD - investmentUSD),
+    "Profit Percentage": `${(
       ((totalUSD - investmentUSD) / investmentUSD) *
       100
     ).toFixed(2)}%`,
-    nbSell: config.transactions.filter((t) => t.type === "sell" && t.date <= date).length,
-    nbBuy: config.transactions.filter((t) => t.type === "buy" && t.date <= date).length,
+  });
+
+  console.table({
+    "Number of Sells": config.transactions.filter(
+      (t) => t.type === "sell" && t.date <= date
+    ).length,
+    "Number of Buys": config.transactions.filter(
+      (t) => t.type === "buy" && t.date <= date
+    ).length,
   });
 }
 

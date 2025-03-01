@@ -63,6 +63,7 @@ export async function getDataFile({
   end_date: string;
   dataFileName: string;
 }) {
+  console.log(dataFileName);
   await new Promise<void>((resolve, reject) => {
     exec(
       `bunx dukascopy-node -i ${instrument} -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`,
