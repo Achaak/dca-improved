@@ -6,7 +6,6 @@ import {
   getData,
   getNbBTC,
   getNbUSD,
-  showStats,
 } from "../utils";
 import { SHOW_LOGS } from "../config";
 import type { Config } from "../types";
@@ -72,10 +71,8 @@ export async function DCAImproved(config: Config) {
     }
   }
 
-  showStats({
+  return {
     config,
-    actualPrice: data[data.length - 1].close,
-    startDate: new Date(data[0].timestamp),
-    endDate: new Date(data[data.length - 1].timestamp),
-  });
+    data,
+  };
 }

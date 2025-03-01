@@ -13,18 +13,12 @@ const defaultConfig: Config = {
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
-let configName = "config"; // Default config file name
 let instrument = defaultConfig.instrument;
 let startDate = defaultConfig.start_date;
 let endDate = defaultConfig.end_date;
 
 args.forEach((arg, index) => {
   switch (arg) {
-    case "-n":
-      if (index + 1 < args.length) {
-        configName = args[index + 1];
-      }
-      break;
     case "-i":
       if (index + 1 < args.length) {
         instrument = args[index + 1];
@@ -44,7 +38,7 @@ args.forEach((arg, index) => {
 });
 
 async function createConfigFile() {
-  const dataFileName = `${instrument}-mn1-${startDate}-${endDate}`;
+  const dataFileName = `${instrument} mn1-${startDate}-${endDate}`;
   defaultConfig.dataFile = `${dataFileName}.json`;
 
   await getDataFile({

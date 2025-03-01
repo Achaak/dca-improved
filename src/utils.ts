@@ -136,6 +136,38 @@ export function withdraw(amountUSD: number, date: Date, config: Config) {
   });
 }
 
+export function getProfitUSD(config: Config, date: Date, actualPrice: number) {
+  const investmentUSD = getInvestmentsUSD(config.transactions, date);
+  const balanceUSD = getNbUSD(config.transactions, date);
+  const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
+  const totalUSD = balanceUSD + btcToUSD;
+
+  return totalUSD - investmentUSD;
+}
+
+export function getProfitPercentage(
+  config: Config,
+  date: Date,
+  actualPrice: number
+) {
+  const balanceUSD = getNbUSD(config.transactions, date);
+  const investmentUSD = getInvestmentsUSD(config.transactions, date);
+  const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
+  const totalUSD = balanceUSD + btcToUSD;
+
+  return ((totalUSD - investmentUSD) / investmentUSD) * 100;
+}
+
+export function getNbOfSells(config: Config, date: Date) {
+  return config.transactions.filter((t) => t.type === "sell" && t.date <= date)
+    .length;
+}
+
+export function getNbOfBuys(config: Config, date: Date) {
+  return config.transactions.filter((t) => t.type === "buy" && t.date <= date)
+    .length;
+}
+
 export function showStats({
   config,
   actualPrice,
@@ -147,36 +179,36 @@ export function showStats({
   startDate: Date;
   endDate: Date;
 }) {
-  const date = config.transactions[config.transactions.length - 1].date;
-  const balanceUSD = getNbUSD(config.transactions, date);
-  const investmentUSD = getInvestmentsUSD(config.transactions, date);
-  const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
+  const balanceUSD = getNbUSD(config.transactions, endDate);
+  const investmentUSD = getInvestmentsUSD(config.transactions, endDate);
+  const btcToUSD = getNbBTC(config.transactions, endDate) * actualPrice;
   const totalUSD = balanceUSD + btcToUSD;
+
+  const profitUSD = getProfitUSD(config, endDate, actualPrice);
+  const profitPercentage = getProfitPercentage(config, endDate, actualPrice);
+
+  const nbOfSells = getNbOfSells(config, endDate);
+  const nbOfBuys = getNbOfBuys(config, endDate);
 
   console.table({
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
     "Balance (USD)": formatUSD(balanceUSD),
-    "Number of BTC": formatBTC(getNbBTC(config.transactions, date)),
-    "Average Cost (USD)": formatUSD(getAverageCost(config.transactions, date)),
+    "Number of BTC": formatBTC(getNbBTC(config.transactions, endDate)),
+    "Average Cost (USD)": formatUSD(
+      getAverageCost(config.transactions, endDate)
+    ),
     "Total Value (USD)": formatUSD(totalUSD),
   });
 
   console.table({
     "Investment (USD)": formatUSD(investmentUSD),
-    "Profit (USD)": formatUSD(totalUSD - investmentUSD),
-    "Profit Percentage": `${(
-      ((totalUSD - investmentUSD) / investmentUSD) *
-      100
-    ).toFixed(2)}%`,
+    "Profit (USD)": formatUSD(profitUSD),
+    "Profit Percentage": `${profitPercentage.toFixed(2)}%`,
   });
 
   console.table({
-    "Number of Sells": config.transactions.filter(
-      (t) => t.type === "sell" && t.date <= date
-    ).length,
-    "Number of Buys": config.transactions.filter(
-      (t) => t.type === "buy" && t.date <= date
-    ).length,
+    "Number of Sells": nbOfSells,
+    "Number of Buys": nbOfBuys,
   });
 }
 

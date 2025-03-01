@@ -1,5 +1,5 @@
 import { buy } from "../transaction";
-import { deposit, getData, showStats } from "../utils";
+import { deposit, getData } from "../utils";
 import type { Config } from "../types";
 
 export async function DCA(config: Config) {
@@ -15,10 +15,8 @@ export async function DCA(config: Config) {
     buy(config.DCA_Value, d.close, date, config);
   }
 
-  showStats({
+  return {
     config,
-    actualPrice: data[data.length - 1].close,
-    startDate: new Date(data[0].timestamp),
-    endDate: new Date(data[data.length - 1].timestamp),
-  });
+    data,
+  };
 }

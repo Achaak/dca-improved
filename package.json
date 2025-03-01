@@ -5,6 +5,7 @@
   "scripts": {
     "start:dca": "bun run src/start-DCA.ts",
     "start:dca-improved": "bun run src/start-DCA-improved.ts",
+    "start:compare": "bun run src/start-compare.ts",
     "create-config": "bun run src/create-config.ts",
     "update-config": "bun run src/update-config.ts"
   },
