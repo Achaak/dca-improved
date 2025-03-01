@@ -2,8 +2,6 @@
 
 ## Create Config
 
-The `create-config.ts` script helps you generate a configuration file for fetching historical price data. You can specify the instrument, start date, end date, and config file name through command line arguments.
-
 ### Usage
 
 ```bash
@@ -21,6 +19,22 @@ bun run src/create-config.ts -n myConfig -i btcusd -s 2016-01-01 -e 2025-01-01
 This command generates a `myConfig.json` file in the `config` directory with the specified parameters.
 
 ## Use Config
+
+## Update Config
+
+### Usage
+
+```bash
+bun run update-config -n <configFileName> -s <startDate> -e <endDate>
+```
+
+### Example
+
+To update the configuration file `myConfig.json` to use data from January 1, 2016, to January 1, 2025, run:
+
+```bash
+bun run update-config -n myConfig -s 2016-01-01 -e 2025-01-01
+```
 
 ### Usage
 
