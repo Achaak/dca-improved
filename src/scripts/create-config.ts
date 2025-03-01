@@ -1,9 +1,9 @@
-import { getDataFile, writeConfig } from "../config";
+import { getDataFile, getDataFileName, writeConfig } from "../config";
 import type { Config } from "../types";
 
 const defaultConfig: Config = {
   fee: 0.001,
-  instrument: "btcusd",
+  token: "btc",
   DCA_Value: 300,
   start_date: "2016-01-01",
   end_date: "2025-01-01",
@@ -13,15 +13,15 @@ const defaultConfig: Config = {
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
-let instrument = defaultConfig.instrument;
+let token = defaultConfig.token;
 let startDate = defaultConfig.start_date;
 let endDate = defaultConfig.end_date;
 
 args.forEach((arg, index) => {
   switch (arg) {
-    case "-i":
+    case "-t":
       if (index + 1 < args.length) {
-        instrument = args[index + 1];
+        token = args[index + 1];
       }
       break;
     case "-s":
@@ -38,11 +38,15 @@ args.forEach((arg, index) => {
 });
 
 async function createConfigFile() {
-  const dataFileName = `${instrument} mn1-${startDate}-${endDate}`;
+  const dataFileName = getDataFileName({
+    token,
+    start_date: startDate,
+    end_date: endDate,
+  });
   defaultConfig.dataFile = `${dataFileName}.json`;
 
   await getDataFile({
-    instrument,
+    token,
     start_date: startDate,
     end_date: endDate,
     dataFileName,

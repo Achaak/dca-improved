@@ -29,7 +29,7 @@ export async function getConfig() {
   } catch {
     console.log("Data file not found, downloading...");
     await getDataFile({
-      instrument: config.instrument,
+      token: config.token,
       start_date: config.start_date,
       end_date: config.end_date,
       dataFileName: config.dataFile.split(".")[0],
@@ -54,20 +54,32 @@ export async function writeConfig(config: Config) {
   await fs.writeFile(configFilePath, JSON.stringify(config, null, 2));
 }
 
+export function getDataFileName({
+  token,
+  start_date,
+  end_date,
+}: {
+  token: string;
+  start_date: string;
+  end_date: string;
+}) {
+  return `${token}usd mn1-${start_date}-${end_date}`;
+}
+
 export async function getDataFile({
-  instrument,
+  token,
   start_date,
   end_date,
   dataFileName,
 }: {
-  instrument: string;
+  token: string;
   start_date: string;
   end_date: string;
   dataFileName: string;
 }) {
   await new Promise<void>((resolve, reject) => {
     exec(
-      `bunx dukascopy-node -i ${instrument} -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`,
+      `bunx dukascopy-node -i ${token}usd -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`,
       (error, stdout, stderr) => {
         if (error) {
           console.error(`Error executing command: ${error.message}`);

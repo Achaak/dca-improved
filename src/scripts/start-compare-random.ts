@@ -22,7 +22,7 @@ const nbOfDays = args.includes("--nb-of-days")
   : 365;
 
 const results = await Promise.all(
-  Array.from({ length: nbOfRuns }).map(() => {
+  Array.from({ length: nbOfRuns }).map(async (_, index) => {
     const c = structuredClone(config);
     const d = structuredClone(data);
 
@@ -50,7 +50,7 @@ const calculateAverageMetrics = (
     actualPrice: average(metrics.map((m) => m.actualPrice)),
     balanceUSD: average(metrics.map((m) => m.balanceUSD)),
     investmentUSD: average(metrics.map((m) => m.investmentUSD)),
-    btcToUSD: average(metrics.map((m) => m.btcToUSD)),
+    tokenToUSD: average(metrics.map((m) => m.tokenToUSD)),
     totalUSD: average(metrics.map((m) => m.totalUSD)),
     profitUSD: average(metrics.map((m) => m.profitUSD)),
     profitPercentage: average(metrics.map((m) => m.profitPercentage)),
@@ -87,10 +87,10 @@ console.table({
     ),
   },
   "BTC to USD": {
-    DCA: formatUSD(DCAMetricsAverage.btcToUSD),
-    "DCA Improved": formatUSD(DCAImprovedMetricsAverage.btcToUSD),
+    DCA: formatUSD(DCAMetricsAverage.tokenToUSD),
+    "DCA Improved": formatUSD(DCAImprovedMetricsAverage.tokenToUSD),
     Difference: formatDifference(
-      DCAImprovedMetricsAverage.btcToUSD - DCAMetricsAverage.btcToUSD
+      DCAImprovedMetricsAverage.tokenToUSD - DCAMetricsAverage.tokenToUSD
     ),
   },
   "Total (USD)": {

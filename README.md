@@ -5,7 +5,7 @@
 ### Usage
 
 ```bash
-bun run create-config -n <configFileName> -i <instrument> -s <startDate> -e <endDate>
+bun run create-config -n <configFileName> -t <token> -s <startDate> -e <endDate>
 ```
 
 ### Example
@@ -13,7 +13,7 @@ bun run create-config -n <configFileName> -i <instrument> -s <startDate> -e <end
 To create a configuration file for Bitcoin (BTC/USD) data from January 1, 2016, to January 1, 2025, run:
 
 ```bash
-bun run src/create-config.ts -n myConfig -i btcusd -s 2016-01-01 -e 2025-01-01
+bun run src/create-config.ts -n myConfig -t btc -s 2016-01-01 -e 2025-01-01
 ```
 
 This command generates a `myConfig.json` file in the `config` directory with the specified parameters.

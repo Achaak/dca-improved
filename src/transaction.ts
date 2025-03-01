@@ -1,5 +1,5 @@
 import { SHOW_LOGS } from "./config";
-import { formatBTC, formatUSD } from "./utils/format";
+import { formatToken, formatUSD } from "./utils/format";
 import type { Config, Transaction } from "./types";
 
 export function buy(
@@ -14,7 +14,7 @@ export function buy(
   }
 
   const feeUSD = amountUSD * config.fee;
-  const amountBTCMinusFee = (amountUSD - feeUSD) / price;
+  const amountTokenMinusFee = (amountUSD - feeUSD) / price;
 
   const balanceUSD = getNbUSD(config.transactions, date);
 
@@ -24,7 +24,7 @@ export function buy(
   }
 
   config.transactions.push({
-    amountBTC: amountBTCMinusFee,
+    amountToken: amountTokenMinusFee,
     price,
     date,
     type: "buy",
@@ -33,7 +33,7 @@ export function buy(
 
   if (SHOW_LOGS) {
     console.log(
-      `\x1b[32m Bought ${formatBTC(amountBTCMinusFee)} BTC for ${formatUSD(
+      `\x1b[32m Bought ${formatToken(amountTokenMinusFee)} BTC for ${formatUSD(
         amountUSD
       )} USD at ${formatUSD(
         price
@@ -45,23 +45,23 @@ export function buy(
 }
 
 export function sell(
-  amountBTC: number,
+  amountToken: number,
   price: number,
   date: Date,
   config: Config
 ) {
-  const nbBTC = getNbBTC(config.transactions, date);
+  const nbToken = getNbToken(config.transactions, date);
 
-  if (nbBTC < amountBTC && SHOW_LOGS) {
+  if (nbToken < amountToken && SHOW_LOGS) {
     console.error("Not enough BTC");
     return;
   }
 
-  const amountUSD = amountBTC * price;
+  const amountUSD = amountToken * price;
   const feeUSD = amountUSD * config.fee;
 
   config.transactions.push({
-    amountBTC,
+    amountToken: amountToken,
     price,
     date,
     type: "sell",
@@ -70,7 +70,7 @@ export function sell(
 
   if (SHOW_LOGS) {
     console.log(
-      `\x1b[31m Sold ${formatBTC(amountBTC)} BTC for ${formatUSD(
+      `\x1b[31m Sold ${formatToken(amountToken)} BTC for ${formatUSD(
         amountUSD
       )} USD at ${formatUSD(
         price
@@ -124,27 +124,27 @@ export function getAverageCost(transactions: Transaction[], date: Date) {
       (t): t is Extract<Transaction, { type: "sell" }> =>
         t.type === "sell" && t.date <= date
     )
-    .reduce((acc, t) => acc + t.amountBTC, 0);
+    .reduce((acc, t) => acc + t.amountToken, 0);
 
   for (const b of allBuy) {
     if (totalBTCSell === 0) {
       break;
     }
 
-    if (b.amountBTC > totalBTCSell) {
-      b.amountBTC -= totalBTCSell;
+    if (b.amountToken > totalBTCSell) {
+      b.amountToken -= totalBTCSell;
       totalBTCSell = 0;
     } else {
-      totalBTCSell -= b.amountBTC;
-      b.amountBTC = 0;
+      totalBTCSell -= b.amountToken;
+      b.amountToken = 0;
     }
   }
 
-  allBuy = allBuy.filter((t) => t.amountBTC > 0);
+  allBuy = allBuy.filter((t) => t.amountToken > 0);
 
   for (const t of allBuy) {
-    sum += t.amountBTC * t.price + t.feeUSD;
-    nb += t.amountBTC;
+    sum += t.amountToken * t.price + t.feeUSD;
+    nb += t.amountToken;
   }
 
   if (nb === 0) {
@@ -154,16 +154,16 @@ export function getAverageCost(transactions: Transaction[], date: Date) {
   return sum / nb;
 }
 
-export function getNbBTC(transactions: Transaction[], date: Date) {
+export function getNbToken(transactions: Transaction[], date: Date) {
   return transactions.reduce((acc, t) => {
     if (t.date > date) {
       return acc;
     }
 
     if (t.type === "buy") {
-      return acc + t.amountBTC;
+      return acc + t.amountToken;
     } else if (t.type === "sell") {
-      return acc - t.amountBTC;
+      return acc - t.amountToken;
     } else {
       return acc;
     }
@@ -182,9 +182,9 @@ export function getNbUSD(transactions: Transaction[], date: Date) {
       case "withdraw":
         return acc - t.amountUSD;
       case "buy":
-        return acc - t.amountBTC * t.price - t.feeUSD;
+        return acc - t.amountToken * t.price - t.feeUSD;
       case "sell":
-        return acc + t.amountBTC * t.price - t.feeUSD;
+        return acc + t.amountToken * t.price - t.feeUSD;
     }
   }, 0);
 }
@@ -206,8 +206,8 @@ export function getInvestmentsUSD(transactions: Transaction[], date: Date) {
 export function getProfitUSD(config: Config, date: Date, actualPrice: number) {
   const investmentUSD = getInvestmentsUSD(config.transactions, date);
   const balanceUSD = getNbUSD(config.transactions, date);
-  const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
-  const totalUSD = balanceUSD + btcToUSD;
+  const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
+  const totalUSD = balanceUSD + tokenToUSD;
 
   return totalUSD - investmentUSD;
 }
@@ -219,8 +219,8 @@ export function getProfitPercentage(
 ) {
   const balanceUSD = getNbUSD(config.transactions, date);
   const investmentUSD = getInvestmentsUSD(config.transactions, date);
-  const btcToUSD = getNbBTC(config.transactions, date) * actualPrice;
-  const totalUSD = balanceUSD + btcToUSD;
+  const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
+  const totalUSD = balanceUSD + tokenToUSD;
 
   return ((totalUSD - investmentUSD) / investmentUSD) * 100;
 }
@@ -246,8 +246,8 @@ export function calculateMetrics({
 }) {
   const balanceUSD = getNbUSD(config.transactions, endDate);
   const investmentUSD = getInvestmentsUSD(config.transactions, endDate);
-  const btcToUSD = getNbBTC(config.transactions, endDate) * actualPrice;
-  const totalUSD = balanceUSD + btcToUSD;
+  const tokenToUSD = getNbToken(config.transactions, endDate) * actualPrice;
+  const totalUSD = balanceUSD + tokenToUSD;
 
   const profitUSD = getProfitUSD(config, endDate, actualPrice);
   const profitPercentage = getProfitPercentage(config, endDate, actualPrice);
@@ -260,7 +260,7 @@ export function calculateMetrics({
     actualPrice,
     balanceUSD,
     investmentUSD,
-    btcToUSD,
+    tokenToUSD,
     totalUSD,
     profitUSD,
     profitPercentage,

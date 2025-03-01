@@ -3,7 +3,7 @@ import {
   deposit,
   sell,
   getAverageCost,
-  getNbBTC,
+  getNbToken,
   getNbUSD,
 } from "../transaction";
 import { SHOW_LOGS } from "../config";
@@ -20,7 +20,7 @@ export async function DCAImproved(config: Config, data: Data[]) {
     const averageCost = getAverageCost(config.transactions, date);
     const priceUnderToBuy = averageCost * RATIO_UNDER_TO_BUY;
     const priceOverToSell = averageCost * RATIO_OVER_TO_SELL;
-    const nbBTC = getNbBTC(config.transactions, date);
+    const nbToken = getNbToken(config.transactions, date);
 
     deposit(config.DCA_Value, date, config);
 
@@ -28,8 +28,8 @@ export async function DCAImproved(config: Config, data: Data[]) {
 
     if (shouldBuy(price, priceUnderToBuy)) {
       handleBuy(config, date, price, transactions);
-    } else if (shouldSell(price, priceOverToSell, nbBTC)) {
-      handleSell(config, date, price, transactions, nbBTC);
+    } else if (shouldSell(price, priceOverToSell, nbToken)) {
+      handleSell(config, date, price, transactions, nbToken);
     }
 
     if (SHOW_LOGS) {
@@ -76,17 +76,17 @@ function handleBuy(
     }
   }
 
-  const nbBTCBuyRatio = 0.1 * (1.1 * nbLastBuy);
+  const nbTokenBuyRatio = 0.1 * (1.1 * nbLastBuy);
 
   const amountUSDToBuy = Math.min(
-    Math.max(balanceUSD * nbBTCBuyRatio, config.DCA_Value),
+    Math.max(balanceUSD * nbTokenBuyRatio, config.DCA_Value),
     balanceUSD
   );
   buy(amountUSDToBuy, price, date, config);
 }
 
-function shouldSell(price: number, priceOverToSell: number, nbBTC: number) {
-  return price > priceOverToSell && nbBTC > 0;
+function shouldSell(price: number, priceOverToSell: number, nbToken: number) {
+  return price > priceOverToSell && nbToken > 0;
 }
 
 function handleSell(
@@ -94,7 +94,7 @@ function handleSell(
   date: Date,
   price: number,
   transactions: any[],
-  nbBTC: number
+  nbToken: number
 ) {
   let nbLastSell = 0;
   for (const transaction of transactions) {
@@ -105,8 +105,8 @@ function handleSell(
     }
   }
 
-  const totalBTCSell = nbBTC * 0.2;
-  sell(totalBTCSell, price, date, config);
+  const totalTokenSell = nbToken * 0.2;
+  sell(totalTokenSell, price, date, config);
 }
 
 function logTransaction(

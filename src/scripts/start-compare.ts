@@ -35,10 +35,10 @@ console.table({
     ),
   },
   "BTC to USD": {
-    DCA: formatUSD(DCAMetrics.btcToUSD),
-    "DCA Improved": formatUSD(DCAImprovedMetrics.btcToUSD),
+    DCA: formatUSD(DCAMetrics.tokenToUSD),
+    "DCA Improved": formatUSD(DCAImprovedMetrics.tokenToUSD),
     Difference: formatDifference(
-      DCAImprovedMetrics.btcToUSD - DCAMetrics.btcToUSD
+      DCAImprovedMetrics.tokenToUSD - DCAMetrics.tokenToUSD
     ),
   },
   "Total (USD)": {

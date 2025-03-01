@@ -1,4 +1,10 @@
-import { deleteDataFile, getConfig, getDataFile, writeConfig } from "../config";
+import {
+  deleteDataFile,
+  getConfig,
+  getDataFile,
+  getDataFileName,
+  writeConfig,
+} from "../config";
 
 const config = await getConfig();
 
@@ -21,12 +27,16 @@ args.forEach((arg, index) => {
 });
 
 async function updateConfigFile() {
-  const dataFileName = `${config.instrument}-mn1-${config.start_date}-${config.end_date}`;
+  const dataFileName = getDataFileName({
+    token: config.token,
+    start_date: config.start_date,
+    end_date: config.end_date,
+  });
   const oldDataFile = config.dataFile;
   config.dataFile = `${dataFileName}.json`;
 
   await getDataFile({
-    instrument: config.instrument,
+    token: config.token,
     start_date: config.start_date,
     end_date: config.end_date,
     dataFileName,

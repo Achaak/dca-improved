@@ -1,4 +1,4 @@
-import { calculateMetrics, getNbBTC, getAverageCost } from "../transaction";
+import { calculateMetrics, getNbToken, getAverageCost } from "../transaction";
 import type { Config } from "../types";
 
 export function formatUSD(amount: number) {
@@ -8,7 +8,7 @@ export function formatUSD(amount: number) {
   });
 }
 
-export function formatBTC(amount: number) {
+export function formatToken(amount: number) {
   return amount.toLocaleString(undefined, {
     maximumFractionDigits: 4,
   });
@@ -46,7 +46,7 @@ export function showStats({
   console.table({
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
     "Balance (USD)": formatUSD(balanceUSD),
-    "Number of BTC": formatBTC(getNbBTC(config.transactions, endDate)),
+    "Number of BTC": formatToken(getNbToken(config.transactions, endDate)),
     "Average Cost (USD)": formatUSD(
       getAverageCost(config.transactions, endDate)
     ),
