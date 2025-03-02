@@ -88,6 +88,7 @@ console.table({
   Period: `${new Date(config.start_date).toLocaleDateString()} - ${new Date(
     config.end_date
   ).toLocaleDateString()}`,
+  Token: config.token.toUpperCase(),
   "Actual Price": formatUSD(DCAMetricsAverage.actualPrice),
   "Interval (days)": nbOfDays,
   "Number of Runs": nbOfRuns,
@@ -115,7 +116,7 @@ console.table({
       DCAImprovedMetricsAverage.feesUSD - DCAMetricsAverage.feesUSD
     ),
   },
-  "BTC to USD": {
+  [`${config.token.toUpperCase()} to USD`]: {
     DCA: formatUSD(DCAMetricsAverage.tokenToUSD),
     "DCA Improved": formatUSD(DCAImprovedMetricsAverage.tokenToUSD),
     Difference: formatDifference(

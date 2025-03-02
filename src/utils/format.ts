@@ -46,8 +46,9 @@ export function showStats({
 
   console.table({
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+    Token: config.token.toUpperCase(),
     "Balance (USD)": formatUSD(balanceUSD),
-    "Number of BTC": formatToken(
+    [`Number of ${config.token.toUpperCase()}`]: formatToken(
       getNbToken({ transactions: config.transactions, date: endDate })
     ),
     "Average Cost (USD)": formatUSD(

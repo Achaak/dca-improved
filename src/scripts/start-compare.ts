@@ -21,10 +21,11 @@ console.table({
   Period: `${new Date(config.start_date).toLocaleDateString()} - ${new Date(
     config.end_date
   ).toLocaleDateString()}`,
+  Token: config.token.toUpperCase(),
   "Actual Price": formatUSD(DCAMetrics.actualPrice),
 });
 
-// Log the balance, investment, BTC to USD, and total
+// Log the balance, investment, Token to USD, and total
 console.table({
   "Balance (USD)": {
     DCA: formatUSD(DCAMetrics.balanceUSD),
@@ -40,7 +41,7 @@ console.table({
       DCAImprovedMetrics.investmentUSD - DCAMetrics.investmentUSD
     ),
   },
-  "BTC to USD": {
+  [`${config.token.toUpperCase()} to USD`]: {
     DCA: formatUSD(DCAMetrics.tokenToUSD),
     "DCA Improved": formatUSD(DCAImprovedMetrics.tokenToUSD),
     Difference: formatDifference(

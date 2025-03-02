@@ -50,11 +50,13 @@ export function buy({
   });
 
   logTransaction(
-    `\x1b[32m Bought ${formatToken(amountTokenMinusFee)} BTC for ${formatUSD(
+    `\x1b[32m Bought ${formatToken(
+      amountTokenMinusFee
+    )} ${config.token.toUpperCase()} for ${formatUSD(
       amountUSD
     )} USD at ${formatUSD(
       price
-    )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
+    )} USD/${config.token.toUpperCase()} on ${date.toLocaleString()}. Fee: ${formatUSD(
       feeUSD
     )} USD \x1b[0m`
   );
@@ -75,7 +77,7 @@ export function sell({
   const totalTokens = getNbToken({ transactions: config.transactions, date });
 
   if (totalTokens < amountToken && SHOW_LOGS) {
-    console.error("Not enough BTC");
+    console.error(`Not enough ${config.token.toUpperCase()}`);
     return;
   }
 
@@ -91,11 +93,13 @@ export function sell({
   });
 
   logTransaction(
-    `\x1b[31m Sold ${formatToken(amountToken)} BTC for ${formatUSD(
+    `\x1b[31m Sold ${formatToken(
+      amountToken
+    )} ${config.token.toUpperCase()} for ${formatUSD(
       amountUSD
     )} USD at ${formatUSD(
       price
-    )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
+    )} USD/${config.token.toUpperCase()} on ${date.toLocaleString()}. Fee: ${formatUSD(
       feeUSD
     )} USD \x1b[0m`
   );
