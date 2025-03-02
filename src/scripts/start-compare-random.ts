@@ -8,6 +8,7 @@ import { formateData, getData } from "../utils/data";
 import { getRandomDateRange } from "../utils/get-random-date-range";
 import type { Config, Data } from "../types";
 
+console.time("DCACompare");
 // Load the existing configuration
 const config = await getConfig();
 
@@ -35,19 +36,28 @@ const spinner = ora(`Running DCACompare for ${nbOfRuns} runs...`).start();
 const results = await Promise.all(
   Array.from({ length: nbOfRuns }).map(async () => {
     const c = structuredClone(config);
-    const d = structuredClone(data);
 
     const randomDateRange = getRandomDateRange(c, nbOfDays);
     c.start_date = randomDateRange.start_date;
     c.end_date = randomDateRange.end_date;
 
-    const dataFiltered = d.filter(
+    const dDCA = structuredClone(data).filter(
       (d) =>
         new Date(d.timestamp) >= new Date(c.start_date) &&
-        new Date(d.timestamp) <= new Date(c.end_date)
+        new Date(d.timestamp) <= new Date(c.end_date) &&
+        d.useInStrategy
+    );
+    const dDCAImproved = structuredClone(data).filter(
+      (d) =>
+        new Date(d.timestamp) >= new Date(c.start_date) &&
+        new Date(d.timestamp) <= new Date(c.end_date) &&
+        d.useInStrategy
     );
 
-    const result = await DCACompare(c, dataFiltered);
+    const result = await DCACompare(c, {
+      dca: dDCA,
+      dcaImproved: dDCAImproved,
+    });
 
     runFinished++;
 
@@ -104,3 +114,5 @@ showCompareMetrics({
   interval: nbOfDays,
   nbRuns: nbOfRuns,
 });
+
+console.timeEnd("DCACompare");
