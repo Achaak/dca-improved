@@ -1,10 +1,4 @@
-import {
-  getConfig,
-  getConfigName,
-  getDataFileName,
-  writeConfig,
-} from "../utils/config";
-import { deleteDataFile } from "../utils/data";
+import { getConfig, getConfigName, writeConfig } from "../utils/config";
 
 // Load the existing configuration
 const config = await getConfig();
@@ -29,23 +23,6 @@ args.forEach((arg, index) => {
   }
 });
 
-// Generate new data file name based on updated token and date range
-const dataFileName = getDataFileName({
-  token: config.token,
-  start_date: config.start_date,
-  end_date: config.end_date,
-});
-const oldDataFile = config.dataFile;
-config.dataFile = `${dataFileName}.json`;
-
-console.log(`📝 Generated new data file name: ${config.dataFile}`);
-
-// Delete the old data file
-await deleteDataFile(oldDataFile);
-console.log(`🗑️ Deleted old data file: ${oldDataFile}`);
-
 // Write the updated configuration to a file
 await writeConfig(config, configName);
-console.log(
-  `✅ Config file "${configName}.json" updated successfully with new data file: ${config.dataFile}`
-);
+console.log(`✅ Config file "${configName}.json" updated successfully`);

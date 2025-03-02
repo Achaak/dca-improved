@@ -24,7 +24,6 @@ export interface Config {
   start_date: string;
   end_date: string;
   transactions: Transaction[];
-  dataFile: string;
 }
 
 export interface Data {

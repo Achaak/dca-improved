@@ -1,4 +1,4 @@
-import { getConfigName, getDataFileName, writeConfig } from "../utils/config";
+import { getConfigName, writeConfig } from "../utils/config";
 import type { Config } from "../types";
 
 // Default configuration
@@ -9,7 +9,6 @@ const defaultConfig: Config = {
   start_date: "2016-01-01",
   end_date: "2025-01-01",
   transactions: [],
-  dataFile: "",
 };
 
 // Parse command line arguments
@@ -40,16 +39,6 @@ args.forEach((arg, index) => {
       break;
   }
 });
-
-// Generate data file name based on token and date range
-const dataFileName = getDataFileName({
-  token,
-  start_date: startDate,
-  end_date: endDate,
-});
-defaultConfig.dataFile = `${dataFileName}.json`;
-
-console.debug(`📝 Generated data file name: ${defaultConfig.dataFile}`);
 
 // Write the configuration to a file
 await writeConfig(defaultConfig, configName);

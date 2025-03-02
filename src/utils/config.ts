@@ -66,20 +66,6 @@ export async function writeConfig(config: Config, configName: string) {
   }
 }
 
-export function getDataFileName({
-  token,
-  start_date,
-  end_date,
-}: {
-  token: string;
-  start_date: string;
-  end_date: string;
-}) {
-  const dataFileName = `${token}usd mn1-${start_date}-${end_date}`;
-  console.debug(`Generated data file name: ${dataFileName}`);
-  return dataFileName;
-}
-
 export async function ensureConfigDirExists() {
   try {
     await fs.access(configDir);

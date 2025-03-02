@@ -12,7 +12,7 @@ const config = await getConfig();
 
 // Fetch data based on the configuration
 const data = await getData({
-  config,
+  token: config.token,
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
