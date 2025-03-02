@@ -1,8 +1,11 @@
 import type { Config, Data } from "../types";
 import path from "path";
-import { exec } from "child_process";
+import { exec as execCallback } from "child_process";
 import { promises as fs } from "fs";
+import { promisify } from "util";
+import ora from "ora";
 
+const exec = promisify(execCallback);
 const dataDir = path.join(__dirname, "../../download/");
 
 export async function getData({
@@ -16,11 +19,14 @@ export async function getData({
 }) {
   const dataFilePath = path.join(dataDir, config.dataFile);
 
-  console.log(`Checking data file: ${dataFilePath}`);
+  const spinner = ora(
+    `Checking if data file exists at: ${dataFilePath}`
+  ).start();
   try {
     await fs.access(dataFilePath);
+    spinner.succeed(`Data file found: ${dataFilePath}`);
   } catch {
-    console.log("Data file not found, downloading...");
+    spinner.warn(`Data file not found at ${dataFilePath}, downloading...`);
     await createDataFile({
       token: config.token,
       start_date: config.start_date,
@@ -30,20 +36,26 @@ export async function getData({
   }
 
   try {
+    spinner.start(`Importing data file: ${dataFilePath}`);
     const module = await import(dataFilePath);
     const data = module.default as Data[];
+    spinner.succeed(`Data file imported successfully: ${dataFilePath}`);
 
-    return data.filter(
+    spinner.start(
+      `Filtering data between ${startDate.toLocaleString()} and ${endDate.toLocaleString()}`
+    );
+    const filteredData = data.filter(
       (d) =>
         new Date(d.timestamp) >= startDate && new Date(d.timestamp) <= endDate
     );
+    spinner.succeed(`Data filtered successfully`);
+    return filteredData;
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error importing data file: ${error.message}`);
-    } else {
-      console.error(`Error importing data file: ${error}`);
-    }
-    throw error;
+    const errorMessage = `Error importing data file at ${dataFilePath}: ${
+      error instanceof Error ? error.message : error
+    }`;
+    spinner.fail(errorMessage);
+    throw new Error(errorMessage);
   }
 }
 
@@ -58,43 +70,39 @@ export async function createDataFile({
   end_date: string;
   dataFileName: string;
 }) {
-  await new Promise<void>((resolve, reject) => {
-    exec(
-      `bunx dukascopy-node -i ${token}usd -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`,
-      (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing command: ${error.message}`);
-          reject(error);
-          return;
-        }
-        if (stderr) {
-          console.error(`stderr: ${stderr}`);
-          reject(new Error(stderr));
-          return;
-        }
-        console.log(stdout);
-        resolve();
-      }
+  const spinner = ora(`Executing command to create data file`).start();
+  try {
+    const { stdout, stderr } = await exec(
+      `bunx dukascopy-node -i ${token}usd -from ${start_date} -to ${end_date} -t mn1 -f json --cache --file-name ${dataFileName}`
     );
-  });
+
+    if (stderr) {
+      const errorMessage = `Error output from command: ${stderr}`;
+      spinner.fail(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    spinner.succeed(`Command output: ${stdout}`);
+  } catch (error) {
+    const errorMessage = `Error executing command to create data file: ${
+      error instanceof Error ? error.message : error
+    }`;
+    spinner.fail(errorMessage);
+    throw new Error(errorMessage);
+  }
 }
 
 export async function deleteDataFile(dataFile: string) {
   const filePath = path.join(dataDir, dataFile);
-  console.log(`Deleting data file: ${filePath}`);
-  await new Promise<void>((resolve, reject) => {
-    exec(`rm -f ${filePath}`, (error, _, stderr) => {
-      if (error) {
-        console.error(`Error executing command: ${error.message}`);
-        reject(error);
-        return;
-      }
-      if (stderr) {
-        console.error(`stderr: ${stderr}`);
-        reject(new Error(stderr));
-        return;
-      }
-      resolve();
-    });
-  });
+  const spinner = ora(`Attempting to delete data file: ${filePath}`).start();
+  try {
+    await exec(`rm -f ${filePath}`);
+    spinner.succeed(`Successfully deleted data file: ${filePath}`);
+  } catch (error) {
+    const errorMessage = `Error executing command to delete data file at ${filePath}: ${
+      error instanceof Error ? error.message : error
+    }`;
+    spinner.fail(errorMessage);
+    throw new Error(errorMessage);
+  }
 }

@@ -1,6 +1,7 @@
 import { getConfigName, getDataFileName, writeConfig } from "../utils/config";
 import type { Config } from "../types";
 
+// Default configuration
 const defaultConfig: Config = {
   fee: 0.001,
   token: "btc",
@@ -19,6 +20,7 @@ let token = defaultConfig.token;
 let startDate = defaultConfig.start_date;
 let endDate = defaultConfig.end_date;
 
+// Process command line arguments
 args.forEach((arg, index) => {
   switch (arg) {
     case "-t":
@@ -39,6 +41,7 @@ args.forEach((arg, index) => {
   }
 });
 
+// Generate data file name based on token and date range
 const dataFileName = getDataFileName({
   token,
   start_date: startDate,
@@ -46,5 +49,8 @@ const dataFileName = getDataFileName({
 });
 defaultConfig.dataFile = `${dataFileName}.json`;
 
+console.debug(`📝 Generated data file name: ${defaultConfig.dataFile}`);
+
+// Write the configuration to a file
 await writeConfig(defaultConfig, configName);
-console.log("Config file created successfully");
+console.log(`✅ Config file "${configName}.json" created successfully`);

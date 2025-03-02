@@ -17,12 +17,15 @@ export async function DCAImproved(config: Config, data: Data[]) {
   for (const d of data) {
     const date = new Date(d.timestamp);
     const price = d.close;
-    const averageCost = getAverageCost(config.transactions, date);
+    const averageCost = getAverageCost({
+      transactions: config.transactions,
+      date,
+    });
     const priceUnderToBuy = averageCost * RATIO_UNDER_TO_BUY;
     const priceOverToSell = averageCost * RATIO_OVER_TO_SELL;
-    const nbToken = getNbToken(config.transactions, date);
+    const nbToken = getNbToken({ transactions: config.transactions, date });
 
-    deposit(config.DCA_Value, date, config);
+    deposit({ date, config, amountUSD: config.DCA_Value });
 
     const transactions = getSortedTransactions(config);
 
@@ -65,7 +68,7 @@ function handleBuy(
   price: number,
   transactions: any[]
 ) {
-  const balanceUSD = getNbUSD(config.transactions, date);
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
 
   let nbLastBuy = 0;
   for (const transaction of transactions) {
@@ -82,7 +85,7 @@ function handleBuy(
     Math.max(balanceUSD * nbTokenBuyRatio, config.DCA_Value),
     balanceUSD
   );
-  buy(amountUSDToBuy, price, date, config);
+  buy({ amountUSD: amountUSDToBuy, price, date, config });
 }
 
 function shouldSell(price: number, priceOverToSell: number, nbToken: number) {
@@ -106,7 +109,7 @@ function handleSell(
   }
 
   const totalTokenSell = nbToken * 0.2;
-  sell(totalTokenSell, price, date, config);
+  sell({ amountToken: totalTokenSell, price, date, config });
 }
 
 function logTransaction(
@@ -116,7 +119,7 @@ function logTransaction(
   priceUnderToBuy: number,
   priceOverToSell: number
 ) {
-  const balanceUSD = getNbUSD(config.transactions, date);
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
   console.log(
     `\x1b[34m${date.toLocaleString()} - ${formatUSD(
       balanceUSD

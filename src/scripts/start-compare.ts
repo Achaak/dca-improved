@@ -3,15 +3,20 @@ import { DCACompare } from "../strategies/DCA-compare";
 import { formatDifference, formatNumber, formatUSD } from "../utils/format";
 import { getData } from "../utils/data";
 
+// Load the existing configuration
 const config = await getConfig();
+
+// Fetch data based on the configuration
 const data = await getData({
   config,
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
 
+// Run the DCA comparison
 const { DCAImprovedMetrics, DCAMetrics } = await DCACompare(config, data);
 
+// Log the period and actual price
 console.table({
   Period: `${new Date(config.start_date).toLocaleDateString()} - ${new Date(
     config.end_date
@@ -19,6 +24,7 @@ console.table({
   "Actual Price": formatUSD(DCAMetrics.actualPrice),
 });
 
+// Log the balance, investment, BTC to USD, and total
 console.table({
   "Balance (USD)": {
     DCA: formatUSD(DCAMetrics.balanceUSD),
@@ -50,6 +56,7 @@ console.table({
   },
 });
 
+// Log the profit in USD and percentage
 console.table({
   "Profit (USD)": {
     DCA: formatUSD(DCAMetrics.profitUSD),
@@ -71,6 +78,7 @@ console.table({
   },
 });
 
+// Log the number of sells and buys
 console.table({
   "Number of Sells": {
     DCA: formatNumber(DCAMetrics.nbOfSells),

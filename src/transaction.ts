@@ -2,21 +2,38 @@ import { SHOW_LOGS } from "./utils/env";
 import { formatToken, formatUSD } from "./utils/format";
 import type { Config, Transaction } from "./types";
 
-export function buy(
-  amountUSD: number,
-  price: number,
-  date: Date,
-  config: Config
-) {
+// Helper function to log transactions
+function logTransaction(message: string) {
+  if (SHOW_LOGS) {
+    console.log(message);
+  }
+}
+
+// Helper function to calculate fees
+function calculateFee(amountUSD: number, feeRate: number): number {
+  return amountUSD * feeRate;
+}
+
+// Function to handle buying tokens
+export function buy({
+  amountUSD,
+  price,
+  date,
+  config,
+}: {
+  amountUSD: number;
+  price: number;
+  date: Date;
+  config: Config;
+}) {
   if (amountUSD <= 0) {
     console.error("Amount must be greater than 0");
     return;
   }
 
-  const feeUSD = amountUSD * config.fee;
+  const feeUSD = calculateFee(amountUSD, config.fee);
   const amountTokenMinusFee = (amountUSD - feeUSD) / price;
-
-  const balanceUSD = getNbUSD(config.transactions, date);
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
 
   if (balanceUSD < amountUSD && SHOW_LOGS) {
     console.error("Not enough balance");
@@ -28,60 +45,71 @@ export function buy(
     price,
     date,
     type: "buy",
-    feeUSD: feeUSD,
+    feeUSD,
   });
 
-  if (SHOW_LOGS) {
-    console.log(
-      `\x1b[32m Bought ${formatToken(amountTokenMinusFee)} BTC for ${formatUSD(
-        amountUSD
-      )} USD at ${formatUSD(
-        price
-      )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
-        feeUSD
-      )} USD \x1b[0m`
-    );
-  }
+  logTransaction(
+    `\x1b[32m Bought ${formatToken(amountTokenMinusFee)} BTC for ${formatUSD(
+      amountUSD
+    )} USD at ${formatUSD(
+      price
+    )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
+      feeUSD
+    )} USD \x1b[0m`
+  );
 }
 
-export function sell(
-  amountToken: number,
-  price: number,
-  date: Date,
-  config: Config
-) {
-  const nbToken = getNbToken(config.transactions, date);
+// Function to handle selling tokens
+export function sell({
+  amountToken,
+  price,
+  date,
+  config,
+}: {
+  amountToken: number;
+  price: number;
+  date: Date;
+  config: Config;
+}) {
+  const totalTokens = getNbToken({ transactions: config.transactions, date });
 
-  if (nbToken < amountToken && SHOW_LOGS) {
+  if (totalTokens < amountToken && SHOW_LOGS) {
     console.error("Not enough BTC");
     return;
   }
 
   const amountUSD = amountToken * price;
-  const feeUSD = amountUSD * config.fee;
+  const feeUSD = calculateFee(amountUSD, config.fee);
 
   config.transactions.push({
-    amountToken: amountToken,
+    amountToken,
     price,
     date,
     type: "sell",
     feeUSD,
   });
 
-  if (SHOW_LOGS) {
-    console.log(
-      `\x1b[31m Sold ${formatToken(amountToken)} BTC for ${formatUSD(
-        amountUSD
-      )} USD at ${formatUSD(
-        price
-      )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
-        feeUSD
-      )} USD \x1b[0m`
-    );
-  }
+  logTransaction(
+    `\x1b[31m Sold ${formatToken(amountToken)} BTC for ${formatUSD(
+      amountUSD
+    )} USD at ${formatUSD(
+      price
+    )} USD/BTC on ${date.toLocaleString()}. Fee: ${formatUSD(
+      feeUSD
+    )} USD \x1b[0m`
+  );
 }
 
-export function deposit(amountUSD: number, date: Date, config: Config) {
+// Function to handle deposits
+export function deposit({
+  amountUSD,
+  date,
+  config,
+}: {
+  amountUSD: number;
+  date: Date;
+  config: Config;
+}) {
   config.transactions.push({
     amountUSD,
     date,
@@ -89,8 +117,17 @@ export function deposit(amountUSD: number, date: Date, config: Config) {
   });
 }
 
-export function withdraw(amountUSD: number, date: Date, config: Config) {
-  const balanceUSD = getNbUSD(config.transactions, date);
+// Function to handle withdrawals
+export function withdraw({
+  amountUSD,
+  date,
+  config,
+}: {
+  amountUSD: number;
+  date: Date;
+  config: Config;
+}) {
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
 
   if (balanceUSD < amountUSD) {
     console.error(
@@ -108,169 +145,251 @@ export function withdraw(amountUSD: number, date: Date, config: Config) {
   });
 }
 
-export function getAverageCost(transactions: Transaction[], date: Date) {
-  let sum = 0;
-  let nb = 0;
+// Function to calculate the average cost of tokens
+export function getAverageCost({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  let totalCost = 0;
+  let totalAmount = 0;
 
-  let allBuy = structuredClone(transactions)
+  let buyTransactions = structuredClone(transactions)
     .filter(
-      (t): t is Extract<Transaction, { type: "buy" }> =>
-        t.type === "buy" && t.date <= date
+      (transaction): transaction is Extract<Transaction, { type: "buy" }> =>
+        transaction.type === "buy" && transaction.date <= date
     )
     .sort((a, b) => a.price - b.price);
 
-  let totalBTCSell = structuredClone(transactions)
+  let totalSoldTokens = structuredClone(transactions)
     .filter(
-      (t): t is Extract<Transaction, { type: "sell" }> =>
-        t.type === "sell" && t.date <= date
+      (transaction): transaction is Extract<Transaction, { type: "sell" }> =>
+        transaction.type === "sell" && transaction.date <= date
     )
-    .reduce((acc, t) => acc + t.amountToken, 0);
+    .reduce((acc, transaction) => acc + transaction.amountToken, 0);
 
-  for (const b of allBuy) {
-    if (totalBTCSell === 0) {
+  for (const buyTransaction of buyTransactions) {
+    if (totalSoldTokens === 0) {
       break;
     }
 
-    if (b.amountToken > totalBTCSell) {
-      b.amountToken -= totalBTCSell;
-      totalBTCSell = 0;
+    if (buyTransaction.amountToken > totalSoldTokens) {
+      buyTransaction.amountToken -= totalSoldTokens;
+      totalSoldTokens = 0;
     } else {
-      totalBTCSell -= b.amountToken;
-      b.amountToken = 0;
+      totalSoldTokens -= buyTransaction.amountToken;
+      buyTransaction.amountToken = 0;
     }
   }
 
-  allBuy = allBuy.filter((t) => t.amountToken > 0);
+  buyTransactions = buyTransactions.filter(
+    (transaction) => transaction.amountToken > 0
+  );
 
-  for (const t of allBuy) {
-    sum += t.amountToken * t.price + t.feeUSD;
-    nb += t.amountToken;
+  for (const transaction of buyTransactions) {
+    totalCost +=
+      transaction.amountToken * transaction.price + transaction.feeUSD;
+    totalAmount += transaction.amountToken;
   }
 
-  if (nb === 0) {
-    return 0;
-  }
-
-  return sum / nb;
+  return totalAmount === 0 ? 0 : totalCost / totalAmount;
 }
 
-export function getNbToken(transactions: Transaction[], date: Date) {
-  return transactions.reduce((acc, t) => {
-    if (t.date > date) {
+// Function to get the number of tokens
+export function getNbToken({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.reduce((acc, transaction) => {
+    if (transaction.date > date) {
       return acc;
     }
 
-    if (t.type === "buy") {
-      return acc + t.amountToken;
-    } else if (t.type === "sell") {
-      return acc - t.amountToken;
+    if (transaction.type === "buy") {
+      return acc + transaction.amountToken;
+    } else if (transaction.type === "sell") {
+      return acc - transaction.amountToken;
     } else {
       return acc;
     }
   }, 0);
 }
 
-export function getNbUSD(transactions: Transaction[], date: Date) {
-  return transactions.reduce((acc, t) => {
-    if (t.date > date) {
+// Function to get the balance in USD
+export function getNbUSD({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.reduce((acc, transaction) => {
+    if (transaction.date > date) {
       return acc;
     }
 
-    switch (t.type) {
+    switch (transaction.type) {
       case "deposit":
-        return acc + t.amountUSD;
+        return acc + transaction.amountUSD;
       case "withdraw":
-        return acc - t.amountUSD;
+        return acc - transaction.amountUSD;
       case "buy":
-        return acc - t.amountToken * t.price - t.feeUSD;
+        return (
+          acc - transaction.amountToken * transaction.price - transaction.feeUSD
+        );
       case "sell":
-        return acc + t.amountToken * t.price - t.feeUSD;
+        return (
+          acc + transaction.amountToken * transaction.price - transaction.feeUSD
+        );
+      default:
+        return acc;
     }
   }, 0);
 }
 
-export function getInvestmentsUSD(transactions: Transaction[], date: Date) {
-  return transactions.reduce((acc, t) => {
-    if (t.date > date) {
+// Function to get the total investments in USD
+export function getInvestmentsUSD({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.reduce((acc, transaction) => {
+    if (transaction.date > date) {
       return acc;
     }
 
-    if (t.type === "deposit") {
-      return acc + t.amountUSD;
+    if (transaction.type === "deposit") {
+      return acc + transaction.amountUSD;
     } else {
       return acc;
     }
   }, 0);
 }
 
-export function getProfitUSD(config: Config, date: Date, actualPrice: number) {
-  const investmentUSD = getInvestmentsUSD(config.transactions, date);
-  const feesUSD = getFeesUSD(config.transactions, date);
-  const balanceUSD = getNbUSD(config.transactions, date);
-  const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
+// Function to get the total fees in USD
+export function getFeesUSD({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.reduce((acc, transaction) => {
+    if (transaction.date > date) {
+      return acc;
+    }
+
+    if (transaction.type === "buy" || transaction.type === "sell") {
+      return acc + transaction.feeUSD;
+    } else {
+      return acc;
+    }
+  }, 0);
+}
+
+// Function to calculate the profit in USD
+export function getProfitUSD({
+  config,
+  date,
+  actualPrice,
+}: {
+  config: Config;
+  date: Date;
+  actualPrice: number;
+}) {
+  const investmentUSD = getInvestmentsUSD({
+    transactions: config.transactions,
+    date,
+  });
+  const feesUSD = getFeesUSD({ transactions: config.transactions, date });
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
+  const tokenToUSD =
+    getNbToken({ transactions: config.transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
   return totalUSD - investmentUSD - feesUSD;
 }
 
-export function getProfitPercentage(
-  config: Config,
-  date: Date,
-  actualPrice: number
-) {
-  const investmentUSD = getInvestmentsUSD(config.transactions, date);
-  const feesUSD = getFeesUSD(config.transactions, date);
-  const balanceUSD = getNbUSD(config.transactions, date);
-  const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
+// Function to calculate the profit percentage
+export function getProfitPercentage({
+  config,
+  date,
+  actualPrice,
+}: {
+  config: Config;
+  date: Date;
+  actualPrice: number;
+}) {
+  const investmentUSD = getInvestmentsUSD({
+    transactions: config.transactions,
+    date,
+  });
+  const feesUSD = getFeesUSD({ transactions: config.transactions, date });
+  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
+  const tokenToUSD =
+    getNbToken({ transactions: config.transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
   return ((totalUSD - investmentUSD - feesUSD) / investmentUSD) * 100;
 }
 
-export function getNbOfSells(config: Config, date: Date) {
-  return config.transactions.filter((t) => t.type === "sell" && t.date <= date)
-    .length;
+// Function to get the number of sell transactions
+export function getNbOfSells({ config, date }: { config: Config; date: Date }) {
+  return config.transactions.filter(
+    (transaction) => transaction.type === "sell" && transaction.date <= date
+  ).length;
 }
 
-export function getNbOfBuys(config: Config, date: Date) {
-  return config.transactions.filter((t) => t.type === "buy" && t.date <= date)
-    .length;
+// Function to get the number of buy transactions
+export function getNbOfBuys({ config, date }: { config: Config; date: Date }) {
+  return config.transactions.filter(
+    (transaction) => transaction.type === "buy" && transaction.date <= date
+  ).length;
 }
 
-export function getFeesUSD(transactions: Transaction[], date: Date) {
-  return transactions.reduce((acc, t) => {
-    if (t.date > date) {
-      return acc;
-    }
-
-    if (t.type === "buy" || t.type === "sell") {
-      return acc + t.feeUSD;
-    } else {
-      return acc;
-    }
-  }, 0);
-}
-
+// Function to calculate various metrics
 export function calculateMetrics({
   actualPrice,
   endDate,
   config,
 }: {
-  config: Config;
-  endDate: Date;
   actualPrice: number;
+  endDate: Date;
+  config: Config;
 }) {
-  const balanceUSD = getNbUSD(config.transactions, endDate);
-  const investmentUSD = getInvestmentsUSD(config.transactions, endDate);
-  const tokenToUSD = getNbToken(config.transactions, endDate) * actualPrice;
+  const balanceUSD = getNbUSD({
+    transactions: config.transactions,
+    date: endDate,
+  });
+  const investmentUSD = getInvestmentsUSD({
+    transactions: config.transactions,
+    date: endDate,
+  });
+  const tokenToUSD =
+    getNbToken({ transactions: config.transactions, date: endDate }) *
+    actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
-  const feesUSD = getFeesUSD(config.transactions, endDate);
+  const feesUSD = getFeesUSD({
+    transactions: config.transactions,
+    date: endDate,
+  });
 
-  const profitUSD = getProfitUSD(config, endDate, actualPrice);
-  const profitPercentage = getProfitPercentage(config, endDate, actualPrice);
+  const profitUSD = getProfitUSD({ config, date: endDate, actualPrice });
+  const profitPercentage = getProfitPercentage({
+    config,
+    date: endDate,
+    actualPrice,
+  });
 
-  const nbOfSells = getNbOfSells(config, endDate);
-  const nbOfBuys = getNbOfBuys(config, endDate);
+  const nbOfSells = getNbOfSells({ config, date: endDate });
+  const nbOfBuys = getNbOfBuys({ config, date: endDate });
 
   return {
     endDate,
