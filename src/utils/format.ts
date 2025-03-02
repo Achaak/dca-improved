@@ -22,7 +22,28 @@ export function formatNumber(value: number) {
   return value % 1 === 0 ? value.toString() : value.toFixed(2);
 }
 
-export function showStats({
+function logTable(title: string, data: Record<string, any>) {
+  console.log(title);
+  const coloredData = Object.entries(data).reduce((acc, [key, value]) => {
+    if (typeof value === "object" && value !== null) {
+      acc[key] = Object.entries(value).reduce((subAcc, [subKey, subValue]) => {
+        if (subKey === "Difference" && typeof subValue === "string") {
+          const color = subValue.startsWith("+") ? "\x1b[32m" : "\x1b[31m";
+          subAcc[subKey] = `${color}${subValue}\x1b[0m`;
+        } else {
+          subAcc[subKey] = subValue;
+        }
+        return subAcc;
+      }, {} as Record<string, any>);
+    } else {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as Record<string, any>);
+  console.table(coloredData);
+}
+
+export function showMetrics({
   config,
   data,
   startDate,
@@ -42,11 +63,15 @@ export function showStats({
     profitPercentage,
     nbOfSells,
     nbOfBuys,
+    drawdown: { peak: drawdownPeak, trough: drawdownTrough },
   } = calculateMetrics({ config, endDate, data });
 
-  console.table({
+  logTable("📅 Period and Token Information", {
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
     Token: config.token.toUpperCase(),
+  });
+
+  logTable("💰 Balance and Investment Metrics", {
     "Balance (USD)": formatUSD(balanceUSD),
     [`Number of ${config.token.toUpperCase()}`]: formatToken(
       getNbToken({ transactions: config.transactions, date: endDate })
@@ -55,17 +80,153 @@ export function showStats({
       getAverageCost({ transactions: config.transactions, date: endDate })
     ),
     "Total Value (USD)": formatUSD(totalUSD),
-  });
-
-  console.table({
     "Investment (USD)": formatUSD(investmentUSD),
     "Fees (USD)": formatUSD(feesUSD),
-    "Profit (USD)": formatUSD(profitUSD),
-    "Profit Percentage": `${profitPercentage.toFixed(2)}%`,
+    "Total (USD)": formatUSD(totalUSD),
   });
 
-  console.table({
+  logTable("📊 Profit and Drawdown Metrics", {
+    "Profit (USD)": formatUSD(profitUSD),
+    "Profit Percentage": `${profitPercentage.toFixed(2)}%`,
+    "Drawdown Peak (%)": `${drawdownPeak.toFixed(2)}%`,
+    "Drawdown Trough (%)": `${drawdownTrough.toFixed(2)}%`,
+  });
+
+  logTable("🔄 Transaction Metrics", {
     "Number of Sells": nbOfSells,
     "Number of Buys": nbOfBuys,
+  });
+}
+
+interface Metrics {
+  balanceUSD: number;
+  investmentUSD: number;
+  tokenToUSD: number;
+  totalUSD: number;
+  profitUSD: number;
+  profitPercentage: number;
+  nbOfSells: number;
+  nbOfBuys: number;
+  actualPrice?: number;
+  drawdown: {
+    peak: number;
+    trough: number;
+  };
+}
+
+export function showCompareMetrics({
+  config,
+  improvedMetrics,
+  interval,
+  metrics,
+  nbRuns,
+}: {
+  metrics: Metrics;
+  improvedMetrics: Metrics;
+  config: Config;
+  interval?: number;
+  nbRuns?: number;
+}) {
+  logTable("📅 Period and Token Information", {
+    Period: `${new Date(config.start_date).toLocaleDateString()} - ${new Date(
+      config.end_date
+    ).toLocaleDateString()}`,
+    Token: config.token.toUpperCase(),
+    ...(interval && { Interval: `${interval} days` }),
+    ...(nbRuns && { "Number of Runs": nbRuns }),
+  });
+
+  logTable("💰 Balance and Investment Details", {
+    "Balance (USD)": {
+      DCA: formatUSD(metrics.balanceUSD),
+      "DCA Improved": formatUSD(improvedMetrics.balanceUSD),
+      Difference: formatDifference(
+        improvedMetrics.balanceUSD - metrics.balanceUSD
+      ),
+    },
+    "Investment (USD)": {
+      DCA: formatUSD(metrics.investmentUSD),
+      "DCA Improved": formatUSD(improvedMetrics.investmentUSD),
+      Difference: formatDifference(
+        improvedMetrics.investmentUSD - metrics.investmentUSD
+      ),
+    },
+    "Fees (USD)": {
+      DCA: formatUSD(metrics.investmentUSD - metrics.balanceUSD),
+      "DCA Improved": formatUSD(
+        improvedMetrics.investmentUSD - improvedMetrics.balanceUSD
+      ),
+      Difference: formatDifference(
+        improvedMetrics.investmentUSD -
+          improvedMetrics.balanceUSD -
+          (metrics.investmentUSD - metrics.balanceUSD)
+      ),
+    },
+    [`${config.token.toUpperCase()} to USD`]: {
+      DCA: formatUSD(metrics.tokenToUSD),
+      "DCA Improved": formatUSD(improvedMetrics.tokenToUSD),
+      Difference: formatDifference(
+        improvedMetrics.tokenToUSD - metrics.tokenToUSD
+      ),
+    },
+    "Total (USD)": {
+      DCA: formatUSD(metrics.totalUSD),
+      "DCA Improved": formatUSD(improvedMetrics.totalUSD),
+      Difference: formatDifference(improvedMetrics.totalUSD - metrics.totalUSD),
+    },
+  });
+
+  logTable("📊 Profit and Drawdown Metrics", {
+    "Profit (USD)": {
+      DCA: formatUSD(metrics.profitUSD),
+      "DCA Improved": formatUSD(improvedMetrics.profitUSD),
+      Difference: formatDifference(
+        improvedMetrics.profitUSD - metrics.profitUSD
+      ),
+    },
+    "Profit (%)": {
+      DCA: `${metrics.profitPercentage.toFixed(2)}%`,
+      "DCA Improved": `${improvedMetrics.profitPercentage.toFixed(2)}%`,
+      Difference: `${
+        improvedMetrics.profitPercentage - metrics.profitPercentage > 0
+          ? "+"
+          : ""
+      }${(improvedMetrics.profitPercentage - metrics.profitPercentage).toFixed(
+        2
+      )} pts`,
+    },
+    "Drawdown Peak (USD)": {
+      DCA: formatUSD(metrics.drawdown.peak),
+      "DCA Improved": formatUSD(improvedMetrics.drawdown.peak),
+      Difference: formatDifference(
+        improvedMetrics.drawdown.peak - metrics.drawdown.peak
+      ),
+    },
+    "Drawdown Trough (USD)": {
+      DCA: formatUSD(metrics.drawdown.trough),
+      "DCA Improved": formatUSD(improvedMetrics.drawdown.trough),
+      Difference: formatDifference(
+        improvedMetrics.drawdown.trough - metrics.drawdown.trough
+      ),
+    },
+  });
+
+  logTable("🔄 Transaction Counts Overview", {
+    "Number of Sells": {
+      DCA: formatNumber(metrics.nbOfSells),
+      "DCA Improved": formatNumber(improvedMetrics.nbOfSells),
+      Difference:
+        improvedMetrics.nbOfSells - metrics.nbOfSells > 0
+          ? `+${formatNumber(improvedMetrics.nbOfSells - metrics.nbOfSells)}`
+          : formatNumber(improvedMetrics.nbOfSells - metrics.nbOfSells),
+    },
+    "Number of Buys": {
+      DCA: formatNumber(metrics.nbOfBuys),
+      "DCA Improved": formatNumber(improvedMetrics.nbOfBuys),
+      Difference:
+        improvedMetrics.nbOfBuys - metrics.nbOfBuys > 0
+          ? `+${formatNumber(improvedMetrics.nbOfBuys - metrics.nbOfBuys)}`
+          : formatNumber(improvedMetrics.nbOfBuys - metrics.nbOfBuys),
+    },
   });
 }

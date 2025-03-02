@@ -1,9 +1,7 @@
 import { getConfig } from "../utils/config";
-import { showStats } from "../utils/format";
+import { showMetrics } from "../utils/format";
 import { DCA } from "../strategies/DCA";
 import { getData } from "../utils/data";
-import { getProfitPercentageHistory } from "../transaction";
-import { getDrawdown } from "../utils/drawdown";
 
 // Load the existing configuration
 const config = await getConfig();
@@ -18,19 +16,8 @@ const data = await getData({
 // Run the DCA strategy
 const { config: updatedConfig } = await DCA(config, data);
 
-const nbUSDHistory = getProfitPercentageHistory({
-  data,
-  config: updatedConfig,
-});
-const balancesUSD = nbUSDHistory.map((b) => b.profitPercentage);
-console.log(
-  balancesUSD,
-  getDrawdown({
-    values: balancesUSD,
-  })
-);
 // Show the statistics
-showStats({
+showMetrics({
   config: updatedConfig,
   data,
   startDate: new Date(data[0].timestamp),
