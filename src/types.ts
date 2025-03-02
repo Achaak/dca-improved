@@ -4,6 +4,7 @@ export type Transaction =
       price: number;
       date: Date;
       type: "buy";
+      // Fee is not included in the amountToken bought
       feeUSD: number;
     }
   | {
@@ -11,6 +12,7 @@ export type Transaction =
       price: number;
       date: Date;
       type: "sell";
+      // Fee included in the amountToken sold
       feeUSD: number;
     }
   | { amountUSD: number; date: Date; type: "deposit" | "withdraw" };

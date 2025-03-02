@@ -17,14 +17,14 @@ export async function DCACompare(config: Config, data: Data[]) {
     ]);
 
   const DCAMetrics = calculateMetrics({
-    actualPrice: dataDAC[dataDAC.length - 1].close,
     config: updatedConfigDCA,
+    data: dataDAC,
     endDate: new Date(dataDAC[dataDAC.length - 1].timestamp),
   });
 
   const DCAImprovedMetrics = calculateMetrics({
-    actualPrice: dataDCAImproved[dataDCAImproved.length - 1].close,
     config: updatedConfigDCAImproved,
+    data: dataDCAImproved,
     endDate: new Date(dataDCAImproved[dataDCAImproved.length - 1].timestamp),
   });
 

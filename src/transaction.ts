@@ -1,6 +1,7 @@
 import { SHOW_LOGS } from "./utils/env";
 import { formatToken, formatUSD } from "./utils/format";
-import type { Config, Transaction } from "./types";
+import type { Config, Data, Transaction } from "./types";
+import { getDrawdown } from "./utils/drawdown";
 
 // Helper function to log transactions
 function logTransaction(message: string) {
@@ -220,6 +221,26 @@ export function getNbToken({
   }, 0);
 }
 
+// Function to get the number of tokens history
+export function getNbTokenHistory({
+  transactions,
+  data,
+}: {
+  transactions: Transaction[];
+  data: Data[];
+}) {
+  return data.map((d) => {
+    const nbToken = getNbToken({
+      transactions,
+      date: new Date(d.timestamp),
+    });
+    return {
+      timestamp: d.timestamp,
+      nbToken,
+    };
+  });
+}
+
 // Function to get the balance in USD
 export function getNbUSD({
   transactions,
@@ -250,6 +271,23 @@ export function getNbUSD({
         return acc;
     }
   }, 0);
+}
+
+// Function to get the balance in USD history
+export function getNbUSDHistory({
+  transactions,
+  data,
+}: {
+  transactions: Transaction[];
+  data: Data[];
+}) {
+  return data.map((d) => {
+    const nbUSD = getNbUSD({ transactions, date: new Date(d.timestamp) });
+    return {
+      timestamp: d.timestamp,
+      nbUSD,
+    };
+  });
 }
 
 // Function to get the total investments in USD
@@ -317,6 +355,28 @@ export function getProfitUSD({
   return totalUSD - investmentUSD - feesUSD;
 }
 
+// Function to get the profit in USD history
+export function getProfitUSDHistory({
+  config,
+  data,
+}: {
+  config: Config;
+  data: Data[];
+}) {
+  return data.map((d) => {
+    const actualPrice = d.close;
+    const profitUSD = getProfitUSD({
+      config,
+      date: new Date(d.timestamp),
+      actualPrice,
+    });
+    return {
+      timestamp: d.timestamp,
+      profitUSD,
+    };
+  });
+}
+
 // Function to calculate the profit percentage
 export function getProfitPercentage({
   config,
@@ -340,6 +400,28 @@ export function getProfitPercentage({
   return ((totalUSD - investmentUSD - feesUSD) / investmentUSD) * 100;
 }
 
+// Function to get the profit percentage history
+export function getProfitPercentageHistory({
+  config,
+  data,
+}: {
+  config: Config;
+  data: Data[];
+}) {
+  return data.map((d) => {
+    const actualPrice = d.close;
+    const profitPercentage = getProfitPercentage({
+      config,
+      date: new Date(d.timestamp),
+      actualPrice,
+    });
+    return {
+      timestamp: d.timestamp,
+      profitPercentage,
+    };
+  });
+}
+
 // Function to get the number of sell transactions
 export function getNbOfSells({ config, date }: { config: Config; date: Date }) {
   return config.transactions.filter(
@@ -356,14 +438,23 @@ export function getNbOfBuys({ config, date }: { config: Config; date: Date }) {
 
 // Function to calculate various metrics
 export function calculateMetrics({
-  actualPrice,
   endDate,
   config,
+  data,
 }: {
-  actualPrice: number;
   endDate: Date;
   config: Config;
+  data: Data[];
 }) {
+  const actualPrice = data[data.length - 1].close;
+  const profitPercentageHistory = getProfitPercentageHistory({
+    data,
+    config,
+  });
+  const balancesUSD = profitPercentageHistory.map((b) => b.profitPercentage);
+  const drawdown = getDrawdown({
+    values: balancesUSD,
+  });
   const balanceUSD = getNbUSD({
     transactions: config.transactions,
     date: endDate,
@@ -392,6 +483,7 @@ export function calculateMetrics({
   const nbOfBuys = getNbOfBuys({ config, date: endDate });
 
   return {
+    drawdown,
     endDate,
     actualPrice,
     balanceUSD,

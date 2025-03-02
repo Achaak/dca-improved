@@ -63,6 +63,10 @@ const calculateAverageMetrics = (
   metrics: ReturnType<typeof calculateMetrics>[]
 ) => {
   return {
+    drawdown: {
+      peak: average(metrics.map((m) => m.drawdown.peak)),
+      trough: average(metrics.map((m) => m.drawdown.trough)),
+    },
     actualPrice: average(metrics.map((m) => m.actualPrice)),
     balanceUSD: average(metrics.map((m) => m.balanceUSD)),
     feesUSD: average(metrics.map((m) => m.feesUSD)),
@@ -128,6 +132,33 @@ console.table({
 });
 
 console.table({
+  "Drawdown peak (%)": {
+    DCA: `${DCAMetricsAverage.drawdown.peak.toFixed(2)}%`,
+    "DCA Improved": `${DCAImprovedMetricsAverage.drawdown.peak.toFixed(2)}%`,
+    Difference: `${
+      DCAImprovedMetricsAverage.drawdown.peak -
+        DCAMetricsAverage.drawdown.peak >
+      0
+        ? "+"
+        : ""
+    }${(
+      DCAImprovedMetricsAverage.drawdown.peak - DCAMetricsAverage.drawdown.peak
+    ).toFixed(2)} pts`,
+  },
+  "Drawdown trough (%)": {
+    DCA: `${DCAMetricsAverage.drawdown.trough.toFixed(2)}%`,
+    "DCA Improved": `${DCAImprovedMetricsAverage.drawdown.trough.toFixed(2)}%`,
+    Difference: `${
+      DCAImprovedMetricsAverage.drawdown.trough -
+        DCAMetricsAverage.drawdown.trough >
+      0
+        ? "+"
+        : ""
+    }${(
+      DCAImprovedMetricsAverage.drawdown.trough -
+      DCAMetricsAverage.drawdown.trough
+    ).toFixed(2)} pts`,
+  },
   "Profit (USD)": {
     DCA: formatUSD(DCAMetricsAverage.profitUSD),
     "DCA Improved": formatUSD(DCAImprovedMetricsAverage.profitUSD),

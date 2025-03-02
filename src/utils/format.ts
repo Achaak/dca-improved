@@ -1,5 +1,5 @@
 import { calculateMetrics, getNbToken, getAverageCost } from "../transaction";
-import type { Config } from "../types";
+import type { Config, Data } from "../types";
 
 export function formatUSD(amount: number) {
   return amount.toLocaleString(undefined, {
@@ -24,12 +24,12 @@ export function formatNumber(value: number) {
 
 export function showStats({
   config,
-  actualPrice,
+  data,
   startDate,
   endDate,
 }: {
   config: Config;
-  actualPrice: number;
+  data: Data[];
   startDate: Date;
   endDate: Date;
 }) {
@@ -42,7 +42,7 @@ export function showStats({
     profitPercentage,
     nbOfSells,
     nbOfBuys,
-  } = calculateMetrics({ config, endDate, actualPrice });
+  } = calculateMetrics({ config, endDate, data });
 
   console.table({
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
