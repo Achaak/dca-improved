@@ -49,6 +49,7 @@ const calculateAverageMetrics = (
   return {
     actualPrice: average(metrics.map((m) => m.actualPrice)),
     balanceUSD: average(metrics.map((m) => m.balanceUSD)),
+    feesUSD: average(metrics.map((m) => m.feesUSD)),
     investmentUSD: average(metrics.map((m) => m.investmentUSD)),
     tokenToUSD: average(metrics.map((m) => m.tokenToUSD)),
     totalUSD: average(metrics.map((m) => m.totalUSD)),
@@ -84,6 +85,13 @@ console.table({
     "DCA Improved": formatUSD(DCAImprovedMetricsAverage.investmentUSD),
     Difference: formatDifference(
       DCAImprovedMetricsAverage.investmentUSD - DCAMetricsAverage.investmentUSD
+    ),
+  },
+  "Fees (USD)": {
+    DCA: formatUSD(DCAMetricsAverage.feesUSD),
+    "DCA Improved": formatUSD(DCAImprovedMetricsAverage.feesUSD),
+    Difference: formatDifference(
+      DCAImprovedMetricsAverage.feesUSD - DCAMetricsAverage.feesUSD
     ),
   },
   "BTC to USD": {

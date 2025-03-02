@@ -205,11 +205,12 @@ export function getInvestmentsUSD(transactions: Transaction[], date: Date) {
 
 export function getProfitUSD(config: Config, date: Date, actualPrice: number) {
   const investmentUSD = getInvestmentsUSD(config.transactions, date);
+  const feesUSD = getFeesUSD(config.transactions, date);
   const balanceUSD = getNbUSD(config.transactions, date);
   const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
-  return totalUSD - investmentUSD;
+  return totalUSD - investmentUSD - feesUSD;
 }
 
 export function getProfitPercentage(
@@ -217,12 +218,13 @@ export function getProfitPercentage(
   date: Date,
   actualPrice: number
 ) {
-  const balanceUSD = getNbUSD(config.transactions, date);
   const investmentUSD = getInvestmentsUSD(config.transactions, date);
+  const feesUSD = getFeesUSD(config.transactions, date);
+  const balanceUSD = getNbUSD(config.transactions, date);
   const tokenToUSD = getNbToken(config.transactions, date) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
-  return ((totalUSD - investmentUSD) / investmentUSD) * 100;
+  return ((totalUSD - investmentUSD - feesUSD) / investmentUSD) * 100;
 }
 
 export function getNbOfSells(config: Config, date: Date) {
@@ -233,6 +235,20 @@ export function getNbOfSells(config: Config, date: Date) {
 export function getNbOfBuys(config: Config, date: Date) {
   return config.transactions.filter((t) => t.type === "buy" && t.date <= date)
     .length;
+}
+
+export function getFeesUSD(transactions: Transaction[], date: Date) {
+  return transactions.reduce((acc, t) => {
+    if (t.date > date) {
+      return acc;
+    }
+
+    if (t.type === "buy" || t.type === "sell") {
+      return acc + t.feeUSD;
+    } else {
+      return acc;
+    }
+  }, 0);
 }
 
 export function calculateMetrics({
@@ -248,6 +264,7 @@ export function calculateMetrics({
   const investmentUSD = getInvestmentsUSD(config.transactions, endDate);
   const tokenToUSD = getNbToken(config.transactions, endDate) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
+  const feesUSD = getFeesUSD(config.transactions, endDate);
 
   const profitUSD = getProfitUSD(config, endDate, actualPrice);
   const profitPercentage = getProfitPercentage(config, endDate, actualPrice);
@@ -259,6 +276,7 @@ export function calculateMetrics({
     endDate,
     actualPrice,
     balanceUSD,
+    feesUSD,
     investmentUSD,
     tokenToUSD,
     totalUSD,
