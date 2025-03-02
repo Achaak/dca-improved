@@ -37,6 +37,7 @@ export function showStats({
     balanceUSD,
     totalUSD,
     investmentUSD,
+    feesUSD,
     profitUSD,
     profitPercentage,
     nbOfSells,
@@ -55,6 +56,7 @@ export function showStats({
 
   console.table({
     "Investment (USD)": formatUSD(investmentUSD),
+    "Fees (USD)": formatUSD(feesUSD),
     "Profit (USD)": formatUSD(profitUSD),
     "Profit Percentage": `${profitPercentage.toFixed(2)}%`,
   });
