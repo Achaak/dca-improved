@@ -3,7 +3,7 @@ import path from "path";
 import { exec } from "child_process";
 import { promises as fs } from "fs";
 
-const dataDir = path.join(__dirname, "../download/");
+const dataDir = path.join(__dirname, "../../download/");
 
 export async function getData({
   config,
@@ -30,7 +30,7 @@ export async function getData({
   }
 
   try {
-    const module = await import("../../download/" + config.dataFile);
+    const module = await import(dataFilePath);
     const data = module.default as Data[];
 
     return data.filter(
