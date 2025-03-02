@@ -1,4 +1,4 @@
-import { getDataFile, getDataFileName, writeConfig } from "../config";
+import { getConfigName, getDataFileName, writeConfig } from "../config";
 import type { Config } from "../types";
 
 const defaultConfig: Config = {
@@ -13,6 +13,8 @@ const defaultConfig: Config = {
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
+const configName = getConfigName(args, "-n") ?? "config";
+
 let token = defaultConfig.token;
 let startDate = defaultConfig.start_date;
 let endDate = defaultConfig.end_date;
@@ -37,22 +39,12 @@ args.forEach((arg, index) => {
   }
 });
 
-async function createConfigFile() {
-  const dataFileName = getDataFileName({
-    token,
-    start_date: startDate,
-    end_date: endDate,
-  });
-  defaultConfig.dataFile = `${dataFileName}.json`;
+const dataFileName = getDataFileName({
+  token,
+  start_date: startDate,
+  end_date: endDate,
+});
+defaultConfig.dataFile = `${dataFileName}.json`;
 
-  await getDataFile({
-    token,
-    start_date: startDate,
-    end_date: endDate,
-    dataFileName,
-  });
-  await writeConfig(defaultConfig);
-  console.log("Config file created successfully");
-}
-
-createConfigFile();
+await writeConfig(defaultConfig, configName);
+console.log("Config file created successfully");

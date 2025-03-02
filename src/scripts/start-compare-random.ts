@@ -8,7 +8,7 @@ import { getRandomDateRange } from "../utils/get-random-date-range";
 
 const config = await getConfig();
 const data = await getData({
-  dataFile: config.dataFile,
+  config,
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
