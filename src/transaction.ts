@@ -27,7 +27,7 @@ export function buy({
   date: Date;
   config: Config;
 }) {
-  if (amountUSD <= 0) {
+  if (amountUSD <= 0 && SHOW_LOGS) {
     console.error("Amount must be greater than 0");
     return;
   }
