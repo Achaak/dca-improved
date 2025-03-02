@@ -28,9 +28,9 @@ export function getArgIntervals(args: string[]) {
   if (args.includes("-i")) {
     const interval = args[args.indexOf("-i") + 1];
 
-    if (!["1m", "5m", "15m", "30m", "1h", "4h", "1d"].includes(interval)) {
+    if (!["1d", "1w", "1mn", "1y"].includes(interval)) {
       console.error(
-        `❌ Invalid interval "${interval}", must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d`
+        `❌ Invalid interval "${interval}", must be one of: 1d, 1w, 1mn, 1y`
       );
 
       process.exit(1);

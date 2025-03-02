@@ -6,7 +6,7 @@ export function getIntervalInDays(interval: Interval) {
       return 1;
     case "1w":
       return 7;
-    case "1m":
+    case "1mn":
       return 30;
     case "1y":
       return 365;

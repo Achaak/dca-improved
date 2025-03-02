@@ -10,7 +10,7 @@ const defaultConfig: Config = {
   start_date: "2016-01-01",
   end_date: "2025-01-01",
   transactions: [],
-  interval: "1m",
+  interval: "1mn",
 };
 
 // Parse command line arguments
@@ -46,9 +46,9 @@ const handleInterval = (index: number) => {
   if (index + 1 < args.length) {
     const interval = args[index + 1];
 
-    if (!["1m", "5m", "15m", "30m", "1h", "4h", "1d"].includes(interval)) {
+    if (!["1d", "1w", "1mn", "1y"].includes(interval)) {
       console.error(
-        `❌ Invalid interval "${interval}", must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d`
+        `❌ Invalid interval "${interval}", must be one of: 1d, 1w, 1mn, 1y`
       );
 
       process.exit(1);
