@@ -108,6 +108,7 @@ interface Metrics {
   nbOfSells: number;
   nbOfBuys: number;
   actualPrice?: number;
+  feesUSD: number;
   drawdown: {
     peak: number;
     trough: number;
@@ -152,15 +153,9 @@ export function showCompareMetrics({
       ),
     },
     "Fees (USD)": {
-      DCA: formatUSD(metrics.investmentUSD - metrics.balanceUSD),
-      "DCA Improved": formatUSD(
-        improvedMetrics.investmentUSD - improvedMetrics.balanceUSD
-      ),
-      Difference: formatDifference(
-        improvedMetrics.investmentUSD -
-          improvedMetrics.balanceUSD -
-          (metrics.investmentUSD - metrics.balanceUSD)
-      ),
+      DCA: formatUSD(metrics.feesUSD),
+      "DCA Improved": formatUSD(improvedMetrics.feesUSD),
+      Difference: formatDifference(improvedMetrics.feesUSD - metrics.feesUSD),
     },
     [`${config.token.toUpperCase()} to USD`]: {
       DCA: formatUSD(metrics.tokenToUSD),
