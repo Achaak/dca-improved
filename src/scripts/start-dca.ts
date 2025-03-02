@@ -1,7 +1,7 @@
-import { getConfig } from "../config";
+import { getConfig } from "../utils/config";
 import { showStats } from "../utils/format";
 import { DCA } from "../strategies/DCA";
-import { getData } from "../utils/get-data";
+import { getData } from "../utils/data";
 
 const config = await getConfig();
 const data = await getData({

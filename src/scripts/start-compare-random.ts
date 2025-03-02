@@ -1,9 +1,9 @@
-import { getConfig } from "../config";
+import { getConfig } from "../utils/config";
 import { DCACompare } from "../strategies/DCA-compare";
 import { calculateMetrics } from "../transaction";
 import { average } from "../utils/average";
 import { formatDifference, formatNumber, formatUSD } from "../utils/format";
-import { getData } from "../utils/get-data";
+import { getData } from "../utils/data";
 import { getRandomDateRange } from "../utils/get-random-date-range";
 
 const config = await getConfig();

@@ -1,10 +1,10 @@
 import {
-  deleteDataFile,
   getConfig,
   getConfigName,
   getDataFileName,
   writeConfig,
-} from "../config";
+} from "../utils/config";
+import { deleteDataFile } from "../utils/data";
 
 const config = await getConfig();
 

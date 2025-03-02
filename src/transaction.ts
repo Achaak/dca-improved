@@ -1,4 +1,4 @@
-import { SHOW_LOGS } from "./config";
+import { SHOW_LOGS } from "./utils/env";
 import { formatToken, formatUSD } from "./utils/format";
 import type { Config, Transaction } from "./types";
 

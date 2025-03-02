@@ -1,4 +1,4 @@
-import { getConfigName, getDataFileName, writeConfig } from "../config";
+import { getConfigName, getDataFileName, writeConfig } from "../utils/config";
 import type { Config } from "../types";
 
 const defaultConfig: Config = {

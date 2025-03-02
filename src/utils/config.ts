@@ -1,11 +1,8 @@
 import path from "path";
 import { promises as fs } from "fs";
-import type { Config } from "./types";
+import type { Config } from "../types";
 
-const configDir = path.join(__dirname, "../config/");
-
-export const SHOW_LOGS =
-  Bun.env["SHOW_LOGS"] === "true" || Bun.env["SHOW_LOGS"] === "1";
+const configDir = path.join(__dirname, "../../config/");
 
 export async function getConfig() {
   const args = Bun.argv.slice(2);
@@ -28,6 +25,7 @@ export function getConfigName(args: string[], argName = "-c") {
     return args[index + 1];
   }
 }
+
 export async function writeConfig(config: Config, configName: string) {
   const configFilePath = path.join(configDir, `${configName}.json`);
 

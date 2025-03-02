@@ -6,8 +6,8 @@ import {
   getNbToken,
   getNbUSD,
 } from "../transaction";
-import { SHOW_LOGS } from "../config";
 import type { Config, Data } from "../types";
+import { SHOW_LOGS } from "../utils/env";
 import { formatUSD } from "../utils/format";
 
 const RATIO_UNDER_TO_BUY = 1.5;
