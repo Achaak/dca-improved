@@ -5,37 +5,37 @@
 ### Usage
 
 ```bash
-bun run create-config -n <configFileName> -t <token> -s <startDate> -e <endDate>
+bun run create-config -n <configFileName> -t <token> -s <startDate> -e <endDate> -v <DCAValue> -i <interval> -f <fee>
 ```
 
 ### Example
 
-To create a configuration file for Bitcoin (BTC/USD) price data from January 1, 2016, to January 1, 2025, run:
+To create a configuration file for Bitcoin (BTC/USD) price data from January 1, 2016, to January 1, 2025, with a DCA value of 300, an interval of 1 minute, and a fee of 0.001, run:
 
 ```bash
-bun run src/create-config.ts -n myConfig -t btc -s 2016-01-01 -e 2025-01-01
+bun run src/create-config.ts -n myConfig -t btc -s 2016-01-01 -e 2025-01-01 -v 300 -i 1m -f 0.001
 ```
 
-This command creates a `myConfig.json` file in the `config` directory containing the specified parameters.
+This command creates a `myConfig.json` file in the config directory containing the specified parameters.
 
 ## Use Config
 
-To use a previously created configuration file, ensure that the file exists in the `config` directory. The following commands will utilize the specified configuration.
+To use a previously created configuration file, ensure that the file exists in the config directory. The following commands will utilize the specified configuration.
 
 ## Update Config
 
 ### Usage
 
 ```bash
-bun run update-config -n <configFileName> -s <startDate> -e <endDate>
+bun run update-config -n <configFileName> -s <startDate> -e <endDate> -v <DCAValue> -i <interval> -f <fee>
 ```
 
 ### Example
 
-To update the configuration file `myConfig.json` to use data from January 1, 2016, to January 1, 2025, run:
+To update the configuration file `myConfig.json` to use data from January 1, 2016, to January 1, 2025, with a DCA value of 300, an interval of 1 minute, and a fee of 0.001, run:
 
 ```bash
-bun run update-config -n myConfig -s 2016-01-01 -e 2025-01-01
+bun run update-config -n myConfig -s 2016-01-01 -e 2025-01-01 -v 300 -i 1m -f 0.001
 ```
 
 ## Start DCA Process

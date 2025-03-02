@@ -1,5 +1,6 @@
-import { getConfigName, writeConfig } from "../utils/config";
+import { writeConfig } from "../utils/config";
 import type { Config } from "../types";
+import { getArgConfigName } from "../utils/args";
 
 // Default configuration
 const defaultConfig: Config = {
@@ -9,29 +10,79 @@ const defaultConfig: Config = {
   start_date: "2016-01-01",
   end_date: "2025-01-01",
   transactions: [],
+  interval: "1m",
 };
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
-const configName = getConfigName(args, "-n") ?? "config";
+const configName = getArgConfigName(args, "-n") ?? "config";
 
 // Process command line arguments
+const handleToken = (index: number) => {
+  if (index + 1 < args.length) {
+    defaultConfig.token = args[index + 1];
+  }
+};
+
+const handleStartDate = (index: number) => {
+  if (index + 1 < args.length) {
+    defaultConfig.start_date = args[index + 1];
+  }
+};
+
+const handleEndDate = (index: number) => {
+  if (index + 1 < args.length) {
+    defaultConfig.end_date = args[index + 1];
+  }
+};
+
+const handleDCAValue = (index: number) => {
+  if (index + 1 < args.length) {
+    defaultConfig.DCA_Value = parseFloat(args[index + 1]);
+  }
+};
+
+const handleInterval = (index: number) => {
+  if (index + 1 < args.length) {
+    const interval = args[index + 1];
+
+    if (!["1m", "5m", "15m", "30m", "1h", "4h", "1d"].includes(interval)) {
+      console.error(
+        `❌ Invalid interval "${interval}", must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d`
+      );
+
+      process.exit(1);
+    }
+
+    defaultConfig.interval = interval as Config["interval"];
+  }
+};
+
+const handleFee = (index: number) => {
+  if (index + 1 < args.length) {
+    defaultConfig.fee = parseFloat(args[index + 1]);
+  }
+};
+
 args.forEach((arg, index) => {
   switch (arg) {
     case "-t":
-      if (index + 1 < args.length) {
-        defaultConfig.token = args[index + 1];
-      }
+      handleToken(index);
       break;
     case "-s":
-      if (index + 1 < args.length) {
-        defaultConfig.start_date = args[index + 1];
-      }
+      handleStartDate(index);
       break;
     case "-e":
-      if (index + 1 < args.length) {
-        defaultConfig.end_date = args[index + 1];
-      }
+      handleEndDate(index);
+      break;
+    case "-v":
+      handleDCAValue(index);
+      break;
+    case "-i":
+      handleInterval(index);
+      break;
+    case "-f":
+      handleFee(index);
       break;
   }
 });

@@ -4,18 +4,20 @@ import { DCACompare } from "../strategies/DCA-compare";
 import { calculateMetrics } from "../transaction";
 import { average } from "../utils/average";
 import { showCompareMetrics } from "../utils/format";
-import { getData } from "../utils/data";
+import { formateData, getData } from "../utils/data";
 import { getRandomDateRange } from "../utils/get-random-date-range";
+import type { Config, Data } from "../types";
 
 // Load the existing configuration
 const config = await getConfig();
 
 // Fetch data based on the configuration
-const data = await getData({
+const jsonItem = await getData({
   token: config.token,
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
+const data = formateData(jsonItem, config.interval);
 
 // Parse command line arguments
 const args = Bun.argv.slice(2);
@@ -55,13 +57,20 @@ const results = await Promise.all(
 
 spinner.succeed(`Completed DCACompare for ${nbOfRuns} runs.`);
 
-// Calculate metrics for DCA and DCA Improved
-const DCAMetrics = results.map((r) => r.DCAMetrics);
-const DCAImprovedMetrics = results.map((r) => r.DCAImprovedMetrics);
+function calculateAverageMetrics(
+  results: {
+    config: Config;
+    data: Data[];
+  }[]
+) {
+  const metrics = results.map((r) =>
+    calculateMetrics({
+      transactions: r.config.transactions,
+      data: r.data,
+      endDate: new Date(r.data[r.data.length - 1].timestamp),
+    })
+  );
 
-const calculateAverageMetrics = (
-  metrics: ReturnType<typeof calculateMetrics>[]
-) => {
   return {
     drawdown: {
       peak: average(metrics.map((m) => m.drawdown.peak)),
@@ -78,10 +87,14 @@ const calculateAverageMetrics = (
     nbOfSells: average(metrics.map((m) => m.nbOfSells)),
     nbOfBuys: average(metrics.map((m) => m.nbOfBuys)),
   };
-};
+}
 
-const DCAMetricsAverage = calculateAverageMetrics(DCAMetrics);
-const DCAImprovedMetricsAverage = calculateAverageMetrics(DCAImprovedMetrics);
+const DCAMetricsAverage = calculateAverageMetrics(
+  results.map((r) => r.resultDAC)
+);
+const DCAImprovedMetricsAverage = calculateAverageMetrics(
+  results.map((r) => r.resultDCAImproved)
+);
 
 // Log the metrics
 showCompareMetrics({

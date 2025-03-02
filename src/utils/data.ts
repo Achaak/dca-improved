@@ -1,6 +1,8 @@
 import path from "path";
 import ora from "ora";
-import { getHistoricalRates } from "dukascopy-node";
+import { getHistoricalRates, type JsonItem } from "dukascopy-node";
+import type { Data, Interval } from "../types";
+import { getIntervalInDays } from "./date";
 
 export async function getData({
   token,
@@ -21,7 +23,7 @@ export async function getData({
         from: startDate,
         to: endDate,
       },
-      timeframe: "mn1",
+      timeframe: "d1",
       instrument: `${token}usd` as any,
       format: "json",
       cacheFolderPath: path.join(__dirname, "../../.dukascopy-cache/"),
@@ -33,4 +35,14 @@ export async function getData({
     spinner.fail("Failed to fetch data");
     throw error;
   }
+}
+
+export function formateData(data: JsonItem[], interval: Interval) {
+  const intervalInDays = getIntervalInDays(interval);
+  const dataFiltered: Data[] = data.map((d, i) => ({
+    ...d,
+    useInStrategy: i % intervalInDays === 0,
+  }));
+
+  return dataFiltered;
 }

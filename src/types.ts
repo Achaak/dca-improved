@@ -1,3 +1,5 @@
+import type { JsonItem } from "dukascopy-node";
+
 export type Transaction =
   | {
       amountToken: number;
@@ -17,6 +19,8 @@ export type Transaction =
     }
   | { amountUSD: number; date: Date; type: "deposit" | "withdraw" };
 
+export type Interval = "1d" | "1w" | "1m" | "1y";
+
 export interface Config {
   fee: number;
   token: string;
@@ -24,12 +28,9 @@ export interface Config {
   start_date: string;
   end_date: string;
   transactions: Transaction[];
+  interval: Interval;
 }
 
-export interface Data {
-  timestamp: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+export interface Data extends JsonItem {
+  useInStrategy: boolean;
 }

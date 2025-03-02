@@ -2,12 +2,13 @@ import path from "path";
 import { promises as fs } from "fs";
 import ora from "ora";
 import type { Config } from "../types";
+import { getArgConfigName } from "./args";
 
 const configDir = path.join(__dirname, "../../config/");
 
 export async function getConfig() {
   const args = Bun.argv.slice(2);
-  const configName = getConfigName(args) ?? "config";
+  const configName = getArgConfigName(args) ?? "config";
   const configFilePath = path.join(configDir, `${configName}.json`);
 
   const spinner = ora(
@@ -34,16 +35,6 @@ export async function getConfig() {
     spinner.fail(errorMessage);
     throw new Error(errorMessage);
   }
-}
-
-export function getConfigName(args: string[], argName = "-c") {
-  const index = args.indexOf(argName);
-  if (index !== -1 && index + 1 < args.length) {
-    const configName = args[index + 1];
-    console.debug(`Config name found in arguments: ${configName}`);
-    return configName;
-  }
-  console.debug(`No config name found in arguments, using default: "config"`);
 }
 
 export async function writeConfig(config: Config, configName: string) {

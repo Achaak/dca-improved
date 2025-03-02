@@ -15,6 +15,10 @@ const RATIO_OVER_TO_SELL = 2.5;
 
 export async function DCAImproved(config: Config, data: Data[]) {
   for (const d of data) {
+    if (!d.useInStrategy) {
+      continue;
+    }
+
     const date = new Date(d.timestamp);
     const price = d.close;
     const averageCost = getAverageCost({
@@ -25,7 +29,11 @@ export async function DCAImproved(config: Config, data: Data[]) {
     const priceOverToSell = averageCost * RATIO_OVER_TO_SELL;
     const nbToken = getNbToken({ transactions: config.transactions, date });
 
-    deposit({ date, config, amountUSD: config.DCA_Value });
+    deposit({
+      date,
+      transactions: config.transactions,
+      amountUSD: config.DCA_Value,
+    });
 
     const transactions = getSortedTransactions(config);
 

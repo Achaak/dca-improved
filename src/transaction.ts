@@ -109,13 +109,13 @@ export function sell({
 export function deposit({
   amountUSD,
   date,
-  config,
+  transactions,
 }: {
   amountUSD: number;
   date: Date;
-  config: Config;
+  transactions: Transaction[];
 }) {
-  config.transactions.push({
+  transactions.push({
     amountUSD,
     date,
     type: "deposit",
@@ -126,13 +126,13 @@ export function deposit({
 export function withdraw({
   amountUSD,
   date,
-  config,
+  transactions,
 }: {
   amountUSD: number;
   date: Date;
-  config: Config;
+  transactions: Transaction[];
 }) {
-  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
+  const balanceUSD = getNbUSD({ transactions: transactions, date });
 
   if (balanceUSD < amountUSD) {
     console.error(
@@ -143,7 +143,7 @@ export function withdraw({
     return;
   }
 
-  config.transactions.push({
+  transactions.push({
     amountUSD,
     date,
     type: "withdraw",
@@ -338,22 +338,21 @@ export function getFeesUSD({
 
 // Function to calculate the profit in USD
 export function getProfitUSD({
-  config,
+  transactions,
   date,
   actualPrice,
 }: {
-  config: Config;
+  transactions: Transaction[];
   date: Date;
   actualPrice: number;
 }) {
   const investmentUSD = getInvestmentsUSD({
-    transactions: config.transactions,
+    transactions: transactions,
     date,
   });
-  const feesUSD = getFeesUSD({ transactions: config.transactions, date });
-  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
-  const tokenToUSD =
-    getNbToken({ transactions: config.transactions, date }) * actualPrice;
+  const feesUSD = getFeesUSD({ transactions, date });
+  const balanceUSD = getNbUSD({ transactions, date });
+  const tokenToUSD = getNbToken({ transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
   return totalUSD - investmentUSD - feesUSD;
@@ -361,16 +360,16 @@ export function getProfitUSD({
 
 // Function to get the profit in USD history
 export function getProfitUSDHistory({
-  config,
+  transactions,
   data,
 }: {
-  config: Config;
+  transactions: Transaction[];
   data: Data[];
 }) {
   return data.map((d) => {
     const actualPrice = d.close;
     const profitUSD = getProfitUSD({
-      config,
+      transactions,
       date: new Date(d.timestamp),
       actualPrice,
     });
@@ -383,22 +382,18 @@ export function getProfitUSDHistory({
 
 // Function to calculate the profit percentage
 export function getProfitPercentage({
-  config,
+  transactions,
   date,
   actualPrice,
 }: {
-  config: Config;
+  transactions: Transaction[];
   date: Date;
   actualPrice: number;
 }) {
-  const investmentUSD = getInvestmentsUSD({
-    transactions: config.transactions,
-    date,
-  });
-  const feesUSD = getFeesUSD({ transactions: config.transactions, date });
-  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
-  const tokenToUSD =
-    getNbToken({ transactions: config.transactions, date }) * actualPrice;
+  const investmentUSD = getInvestmentsUSD({ transactions, date });
+  const feesUSD = getFeesUSD({ transactions, date });
+  const balanceUSD = getNbUSD({ transactions, date });
+  const tokenToUSD = getNbToken({ transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
   return ((totalUSD - investmentUSD - feesUSD) / investmentUSD) * 100;
@@ -406,16 +401,16 @@ export function getProfitPercentage({
 
 // Function to get the profit percentage history
 export function getProfitPercentageHistory({
-  config,
+  transactions,
   data,
 }: {
-  config: Config;
+  transactions: Transaction[];
   data: Data[];
 }) {
   return data.map((d) => {
     const actualPrice = d.close;
     const profitPercentage = getProfitPercentage({
-      config,
+      transactions,
       date: new Date(d.timestamp),
       actualPrice,
     });
@@ -427,15 +422,27 @@ export function getProfitPercentageHistory({
 }
 
 // Function to get the number of sell transactions
-export function getNbOfSells({ config, date }: { config: Config; date: Date }) {
-  return config.transactions.filter(
+export function getNbOfSells({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.filter(
     (transaction) => transaction.type === "sell" && transaction.date <= date
   ).length;
 }
 
 // Function to get the number of buy transactions
-export function getNbOfBuys({ config, date }: { config: Config; date: Date }) {
-  return config.transactions.filter(
+export function getNbOfBuys({
+  transactions,
+  date,
+}: {
+  transactions: Transaction[];
+  date: Date;
+}) {
+  return transactions.filter(
     (transaction) => transaction.type === "buy" && transaction.date <= date
   ).length;
 }
@@ -443,48 +450,51 @@ export function getNbOfBuys({ config, date }: { config: Config; date: Date }) {
 // Function to calculate various metrics
 export function calculateMetrics({
   endDate,
-  config,
+  transactions,
   data,
 }: {
   endDate: Date;
-  config: Config;
+  transactions: Transaction[];
   data: Data[];
 }) {
   const actualPrice = data[data.length - 1].close;
   const profitPercentageHistory = getProfitPercentageHistory({
     data,
-    config,
+    transactions: transactions,
   });
   const balancesUSD = profitPercentageHistory.map((b) => b.profitPercentage);
   const drawdown = getDrawdown({
     values: balancesUSD,
   });
   const balanceUSD = getNbUSD({
-    transactions: config.transactions,
+    transactions: transactions,
     date: endDate,
   });
   const investmentUSD = getInvestmentsUSD({
-    transactions: config.transactions,
+    transactions: transactions,
     date: endDate,
   });
   const tokenToUSD =
-    getNbToken({ transactions: config.transactions, date: endDate }) *
-    actualPrice;
+    getNbToken({ transactions: transactions, date: endDate }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
   const feesUSD = getFeesUSD({
-    transactions: config.transactions,
+    transactions: transactions,
     date: endDate,
   });
 
-  const profitUSD = getProfitUSD({ config, date: endDate, actualPrice });
+  const profitUSD = getProfitUSD({
+    transactions: transactions,
+    date: endDate,
+    actualPrice,
+  });
   const profitPercentage = getProfitPercentage({
-    config,
+    transactions: transactions,
     date: endDate,
     actualPrice,
   });
 
-  const nbOfSells = getNbOfSells({ config, date: endDate });
-  const nbOfBuys = getNbOfBuys({ config, date: endDate });
+  const nbOfSells = getNbOfSells({ transactions, date: endDate });
+  const nbOfBuys = getNbOfBuys({ transactions, date: endDate });
 
   return {
     drawdown,

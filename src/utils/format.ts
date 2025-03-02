@@ -64,7 +64,7 @@ export function showMetrics({
     nbOfSells,
     nbOfBuys,
     drawdown: { peak: drawdownPeak, trough: drawdownTrough },
-  } = calculateMetrics({ config, endDate, data });
+  } = calculateMetrics({ transactions: config.transactions, endDate, data });
 
   logTable("📅 Period and Token Information", {
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
@@ -90,6 +90,7 @@ export function showMetrics({
     "Profit Percentage": `${profitPercentage.toFixed(2)}%`,
     "Drawdown Peak (%)": `${drawdownPeak.toFixed(2)}%`,
     "Drawdown Trough (%)": `${drawdownTrough.toFixed(2)}%`,
+    "Drawdown Gap": `${(drawdownPeak - drawdownTrough).toFixed(2)} pts`,
   });
 
   logTable("🔄 Transaction Metrics", {
@@ -128,6 +129,15 @@ export function showCompareMetrics({
   interval?: number;
   nbRuns?: number;
 }) {
+  const drawdownPeakDifference =
+    improvedMetrics.drawdown.peak - metrics.drawdown.peak;
+  const drawdownTroughDifference =
+    improvedMetrics.drawdown.trough - metrics.drawdown.trough;
+  const dcaDrawdownGap = metrics.drawdown.peak - metrics.drawdown.trough;
+  const improvedDrawdownGap =
+    improvedMetrics.drawdown.peak - improvedMetrics.drawdown.trough;
+  const drawdownGapDifference = improvedDrawdownGap - dcaDrawdownGap;
+
   logTable("📅 Period and Token Information", {
     Period: `${new Date(config.start_date).toLocaleDateString()} - ${new Date(
       config.end_date
@@ -190,19 +200,26 @@ export function showCompareMetrics({
         2
       )} pts`,
     },
-    "Drawdown Peak (USD)": {
-      DCA: formatUSD(metrics.drawdown.peak),
-      "DCA Improved": formatUSD(improvedMetrics.drawdown.peak),
-      Difference: formatDifference(
-        improvedMetrics.drawdown.peak - metrics.drawdown.peak
-      ),
+    "Drawdown Peak (%)": {
+      DCA: `${metrics.drawdown.peak.toFixed(2)}%`,
+      "DCA Improved": `${improvedMetrics.drawdown.peak.toFixed(2)}%`,
+      Difference: `${
+        drawdownPeakDifference > 0 ? "+" : ""
+      }${drawdownPeakDifference.toFixed(2)} pts`,
     },
-    "Drawdown Trough (USD)": {
-      DCA: formatUSD(metrics.drawdown.trough),
-      "DCA Improved": formatUSD(improvedMetrics.drawdown.trough),
-      Difference: formatDifference(
-        improvedMetrics.drawdown.trough - metrics.drawdown.trough
-      ),
+    "Drawdown Trough (%)": {
+      DCA: `${metrics.drawdown.trough.toFixed(2)}%`,
+      "DCA Improved": `${improvedMetrics.drawdown.trough.toFixed(2)}%`,
+      Difference: `${
+        drawdownTroughDifference > 0 ? "+" : ""
+      }${drawdownTroughDifference.toFixed(2)} pts`,
+    },
+    "Drawdown Gap": {
+      DCA: `${dcaDrawdownGap.toFixed(2)} pts`,
+      "DCA Improved": `${improvedDrawdownGap.toFixed(2)} pts`,
+      Difference: `${
+        drawdownGapDifference > 0 ? "+" : ""
+      }${drawdownGapDifference.toFixed(2)} pts`,
     },
   });
 
