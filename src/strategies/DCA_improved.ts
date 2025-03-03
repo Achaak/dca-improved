@@ -16,6 +16,7 @@ export async function DCAImproved({
   ratioUnderToBuy = 1.5,
   ratioOverToSell = 2.5,
   calculateTotalTokenSell = (nbToken: number) => {
+    // return 0.1 * (1.1 * nbToken);
     return nbToken * 0.2;
   },
   calculateNbTokenBuyRatio = (nbLastBuy: number) => {
@@ -30,9 +31,7 @@ export async function DCAImproved({
   calculateTotalTokenSell?: (nbToken: number) => number;
 }) {
   for (const d of data) {
-    if (!d.useInStrategy) {
-      continue;
-    }
+    if (!d.useInStrategy) continue;
 
     const date = new Date(d.timestamp);
     const price = d.close;
@@ -89,10 +88,7 @@ export async function DCAImproved({
     }
   }
 
-  return {
-    config,
-    data,
-  };
+  return { config, data };
 }
 
 function getSortedTransactionsByDate(transactions: Transaction[]) {

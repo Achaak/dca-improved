@@ -421,32 +421,6 @@ export function getProfitPercentageHistory({
   });
 }
 
-// Function to get the number of sell transactions
-export function getNbOfSells({
-  transactions,
-  date,
-}: {
-  transactions: Transaction[];
-  date: Date;
-}) {
-  return transactions.filter(
-    (transaction) => transaction.type === "sell" && transaction.date <= date
-  ).length;
-}
-
-// Function to get the number of buy transactions
-export function getNbOfBuys({
-  transactions,
-  date,
-}: {
-  transactions: Transaction[];
-  date: Date;
-}) {
-  return transactions.filter(
-    (transaction) => transaction.type === "buy" && transaction.date <= date
-  ).length;
-}
-
 // Function to calculate various metrics
 export function calculateMetrics({
   endDate,
@@ -458,43 +432,37 @@ export function calculateMetrics({
   data: Data[];
 }) {
   const actualPrice = data[data.length - 1].close;
+
+  // Memoize repeated calculations
+  const balanceUSD = getNbUSD({ transactions, date: endDate });
+  const investmentUSD = getInvestmentsUSD({ transactions, date: endDate });
+  const tokenToUSD = getNbToken({ transactions, date: endDate }) * actualPrice;
+  const totalUSD = balanceUSD + tokenToUSD;
+  const feesUSD = getFeesUSD({ transactions, date: endDate });
+
+  const profitUSD = totalUSD - investmentUSD - feesUSD;
+  const profitPercentage = (profitUSD / investmentUSD) * 100;
+
   const profitPercentageHistory = getProfitPercentageHistory({
     data,
-    transactions: transactions,
-  });
-  const balancesUSD = profitPercentageHistory.map((b) => b.profitPercentage);
-  const drawdown = getDrawdown({
-    values: balancesUSD,
-  });
-  const balanceUSD = getNbUSD({
-    transactions: transactions,
-    date: endDate,
-  });
-  const investmentUSD = getInvestmentsUSD({
-    transactions: transactions,
-    date: endDate,
-  });
-  const tokenToUSD =
-    getNbToken({ transactions: transactions, date: endDate }) * actualPrice;
-  const totalUSD = balanceUSD + tokenToUSD;
-  const feesUSD = getFeesUSD({
-    transactions: transactions,
-    date: endDate,
-  });
+    transactions,
+  }).map((b) => b.profitPercentage);
 
-  const profitUSD = getProfitUSD({
-    transactions: transactions,
-    date: endDate,
-    actualPrice,
-  });
-  const profitPercentage = getProfitPercentage({
-    transactions: transactions,
-    date: endDate,
-    actualPrice,
-  });
+  const drawdown = getDrawdown({ values: profitPercentageHistory });
 
-  const nbOfSells = getNbOfSells({ transactions, date: endDate });
-  const nbOfBuys = getNbOfBuys({ transactions, date: endDate });
+  const { nbOfSells, nbOfBuys } = transactions.reduce(
+    (acc, { date, type }) => {
+      if (date <= endDate) {
+        if (type === "sell") {
+          acc.nbOfSells += 1;
+        } else if (type === "buy") {
+          acc.nbOfBuys += 1;
+        }
+      }
+      return acc;
+    },
+    { nbOfSells: 0, nbOfBuys: 0 }
+  );
 
   return {
     drawdown,

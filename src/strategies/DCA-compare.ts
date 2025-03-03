@@ -10,7 +10,6 @@ export async function DCACompare(
   }
 ) {
   const configDAC = structuredClone(config);
-
   const configDCAImproved = structuredClone(config);
 
   const [resultDAC, resultDCAImproved] = await Promise.all([

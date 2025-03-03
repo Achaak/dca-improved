@@ -31,7 +31,7 @@ const nbOfRunsByIteration = args.includes("--nb-of-runs-by-iteration")
 type Iteration = {
   ratioOverToSell: number;
   ratioUnderToBuy: number;
-  totalTokenSellRatio: number;
+  totalTokenSellRatio: number[];
   profitAvg: number;
   totalTokenBuyRatio: number[];
 };
@@ -44,7 +44,7 @@ function random(min: number, max: number) {
 for (let i = 0; i < nbIterations; i++) {
   const ratioUnderToBuy = random(1, 4);
   const ratioOverToSell = random(ratioUnderToBuy, Math.max(5, ratioUnderToBuy));
-  const totalTokenSellRatio = random(0.01, 1);
+  const totalTokenSellRatio = [random(0.05, 3), random(1, 4)];
   const totalTokenBuyRatio = [random(0.05, 3), random(1, 4)];
 
   // Run the comparison for the specified number of runs
@@ -72,7 +72,7 @@ for (let i = 0; i < nbIterations; i++) {
           return totalTokenBuyRatio[0] * (totalTokenBuyRatio[1] * nbLastBuy);
         },
         calculateTotalTokenSell: (nbToken: number) => {
-          return nbToken * totalTokenSellRatio;
+          return totalTokenSellRatio[0] * (totalTokenSellRatio[1] * nbToken);
         },
       });
 
@@ -108,7 +108,9 @@ for (let i = 0; i < nbIterations; i++) {
       "Profit avg": i.profitAvg.toFixed(2),
       "Ratio over to sell": i.ratioOverToSell.toFixed(2),
       "Ratio under to buy": i.ratioUnderToBuy.toFixed(2),
-      "Total token sell ratio": i.totalTokenSellRatio.toFixed(2),
+      "Total token sell ratio": i.totalTokenSellRatio
+        .map((r) => r.toFixed(2))
+        .join(" - "),
       "Total token buy ratio": i.totalTokenBuyRatio
         .map((r) => r.toFixed(2))
         .join(" - "),
