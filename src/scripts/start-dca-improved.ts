@@ -15,7 +15,7 @@ const jsonItem = await getData({
 const data = formateData(jsonItem, config.interval);
 
 // Run the DCA Improved strategy
-const { config: updatedConfig } = await DCAImproved(config, data);
+const { config: updatedConfig } = await DCAImproved({ config, data });
 
 // Log the metrics
 showMetrics({

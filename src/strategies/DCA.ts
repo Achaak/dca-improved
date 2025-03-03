@@ -1,7 +1,7 @@
 import { buy, deposit } from "../transaction";
 import type { Config, Data } from "../types";
 
-export async function DCA(config: Config, data: Data[]) {
+export async function DCA({ config, data }: { config: Config; data: Data[] }) {
   for (const d of data) {
     if (!d.useInStrategy) {
       continue;

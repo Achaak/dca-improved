@@ -10,18 +10,25 @@ import type { Config, Data, Transaction } from "../types";
 import { SHOW_LOGS } from "../utils/env";
 import { formatUSD } from "../utils/format";
 
-const RATIO_UNDER_TO_BUY = 1.5;
-const RATIO_OVER_TO_SELL = 2.5;
-
-function calculateNbTokenBuyRatio(nbLastBuy: number) {
-  return 0.1 * (1.1 * nbLastBuy);
-}
-
-function calculateTotalTokenSell(nbToken: number) {
-  return nbToken * 0.2;
-}
-
-export async function DCAImproved(config: Config, data: Data[]) {
+export async function DCAImproved({
+  config,
+  data,
+  ratioUnderToBuy = 1.5,
+  ratioOverToSell = 2.5,
+  calculateTotalTokenSell = (nbToken: number) => {
+    return nbToken * 0.2;
+  },
+  calculateNbTokenBuyRatio = (nbLastBuy: number) => {
+    return 0.1 * (1.1 * nbLastBuy);
+  },
+}: {
+  config: Config;
+  data: Data[];
+  ratioUnderToBuy?: number;
+  ratioOverToSell?: number;
+  calculateNbTokenBuyRatio?: (nbLastBuy: number) => number;
+  calculateTotalTokenSell?: (nbToken: number) => number;
+}) {
   for (const d of data) {
     if (!d.useInStrategy) {
       continue;
@@ -33,8 +40,8 @@ export async function DCAImproved(config: Config, data: Data[]) {
       transactions: config.transactions,
       date,
     });
-    const priceUnderToBuy = averageCost * RATIO_UNDER_TO_BUY;
-    const priceOverToSell = averageCost * RATIO_OVER_TO_SELL;
+    const priceUnderToBuy = averageCost * ratioUnderToBuy;
+    const priceOverToSell = averageCost * ratioOverToSell;
     const nbToken = getNbToken({ transactions: config.transactions, date });
 
     deposit({
@@ -58,6 +65,7 @@ export async function DCAImproved(config: Config, data: Data[]) {
         date,
         price,
         transactions: transactionsSortedByDate,
+        calculateNbTokenBuyRatio,
       });
     } else if (shouldSell(price, priceOverToSell, nbToken)) {
       handleSell({
@@ -66,6 +74,7 @@ export async function DCAImproved(config: Config, data: Data[]) {
         price,
         nbToken,
         transactions: transactionsSortedByDate,
+        calculateTotalTokenSell,
       });
     }
 
@@ -107,11 +116,13 @@ function handleBuy({
   date,
   price,
   transactions,
+  calculateNbTokenBuyRatio,
 }: {
   config: Config;
   date: Date;
   price: number;
   transactions: Transaction[];
+  calculateNbTokenBuyRatio: (nbLastBuy: number) => number;
 }) {
   const balanceUSD = getNbUSD({ transactions: config.transactions, date });
 
@@ -125,7 +136,10 @@ function handleBuy({
   }
 
   const nbTokenBuyRatio = calculateNbTokenBuyRatio(nbLastBuy);
-  const amountUSDToBuy = Math.max(balanceUSD * nbTokenBuyRatio, balanceUSD);
+  let amountUSDToBuy = Math.max(balanceUSD * nbTokenBuyRatio, balanceUSD);
+  if (amountUSDToBuy > balanceUSD) {
+    amountUSDToBuy = balanceUSD;
+  }
   buy({ amountUSD: amountUSDToBuy, price, date, config });
 }
 
@@ -139,12 +153,14 @@ function handleSell({
   nbToken,
   price,
   transactions,
+  calculateTotalTokenSell,
 }: {
   config: Config;
   date: Date;
   price: number;
   nbToken: number;
   transactions: Transaction[];
+  calculateTotalTokenSell: (nbToken: number) => number;
 }) {
   let nbLastSell = 0;
   for (const transaction of transactions) {

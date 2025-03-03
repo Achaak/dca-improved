@@ -14,8 +14,8 @@ export async function DCACompare(
   const configDCAImproved = structuredClone(config);
 
   const [resultDAC, resultDCAImproved] = await Promise.all([
-    DCA(configDAC, data.dca),
-    DCAImproved(configDCAImproved, data.dcaImproved),
+    DCA({ config: configDAC, data: data.dca }),
+    DCAImproved({ config: configDCAImproved, data: data.dcaImproved }),
   ]);
 
   return {

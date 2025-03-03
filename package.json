@@ -5,6 +5,7 @@
   "scripts": {
     "start:dca": "bun run src/scripts/start-DCA.ts",
     "start:dca-improved": "bun run src/scripts/start-DCA-improved.ts",
+    "start:dca-improved-random-params": "bun run src/scripts/start-dca-improved-random-parameters.ts",
     "start:compare": "bun run src/scripts/start-compare.ts",
     "start:compare:random": "bun run src/scripts/start-compare-random.ts",
     "create-config": "bun run src/scripts/create-config.ts",
