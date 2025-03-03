@@ -6,7 +6,7 @@ import {
   getNbToken,
   getNbUSD,
 } from "../transaction";
-import type { Config, Data, Transaction } from "../types";
+import type { AccountActivity, Config, Data, Transaction } from "../types";
 import { SHOW_LOGS } from "../utils/env";
 import { formatUSD } from "../utils/format";
 
@@ -45,7 +45,7 @@ export async function DCAImproved({
 
     deposit({
       date,
-      transactions: config.transactions,
+      accountActivities: config.accountActivities,
       amountUSD: config.DCA_Value,
     });
 
@@ -81,6 +81,7 @@ export async function DCAImproved({
       logTransaction({
         date,
         transactions: config.transactions,
+        accountActivities: config.accountActivities,
         averageCost,
         priceUnderToBuy,
         priceOverToSell,
@@ -120,7 +121,11 @@ function handleBuy({
   transactions: Transaction[];
   calculateNbTokenBuyRatio: (nbLastBuy: number) => number;
 }) {
-  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
+  const balanceUSD = getNbUSD({
+    transactions: config.transactions,
+    accountActivities: config.accountActivities,
+    date,
+  });
 
   let nbLastBuy = 0;
   for (const transaction of transactions) {
@@ -174,17 +179,19 @@ function handleSell({
 function logTransaction({
   averageCost,
   transactions,
+  accountActivities,
   date,
   priceOverToSell,
   priceUnderToBuy,
 }: {
   date: Date;
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   averageCost: number;
   priceUnderToBuy: number;
   priceOverToSell: number;
 }) {
-  const balanceUSD = getNbUSD({ transactions, date });
+  const balanceUSD = getNbUSD({ transactions, accountActivities, date });
   console.log(
     `\x1b[34m${date.toLocaleString()} - ${formatUSD(
       balanceUSD

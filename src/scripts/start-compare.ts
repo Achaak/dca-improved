@@ -16,18 +16,17 @@ const jsonItem = await getData({
 const data = formateData(jsonItem, config.interval);
 
 // Run the DCA comparison
-const { resultDAC, resultDCAImproved } = await DCACompare(config, {
-  dca: structuredClone(data).filter((d) => d.useInStrategy),
-  dcaImproved: structuredClone(data),
-});
+const { resultDAC, resultDCAImproved } = await DCACompare(config, data);
 
 const DCAMetrics = calculateMetrics({
+  accountActivities: resultDAC.config.accountActivities,
   transactions: resultDAC.config.transactions,
   data: resultDAC.data,
   endDate: new Date(resultDAC.data[resultDAC.data.length - 1].timestamp),
 });
 
 const DCAImprovedMetrics = calculateMetrics({
+  accountActivities: resultDCAImproved.config.accountActivities,
   transactions: resultDCAImproved.config.transactions,
   data: resultDCAImproved.data,
   endDate: new Date(

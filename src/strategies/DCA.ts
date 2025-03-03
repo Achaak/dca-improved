@@ -11,7 +11,7 @@ export async function DCA({ config, data }: { config: Config; data: Data[] }) {
     deposit({
       amountUSD: config.DCA_Value,
       date,
-      transactions: config.transactions,
+      accountActivities: config.accountActivities,
     });
     buy({ amountUSD: config.DCA_Value, price: d.close, date, config });
   }

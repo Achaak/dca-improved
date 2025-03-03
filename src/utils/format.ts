@@ -64,7 +64,12 @@ export function showMetrics({
     nbOfSells,
     nbOfBuys,
     drawdown: { peak: drawdownPeak, trough: drawdownTrough },
-  } = calculateMetrics({ transactions: config.transactions, endDate, data });
+  } = calculateMetrics({
+    transactions: config.transactions,
+    endDate,
+    data,
+    accountActivities: config.accountActivities,
+  });
 
   logTable("📅 Period and Token Information", {
     Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,

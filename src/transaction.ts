@@ -1,6 +1,6 @@
 import { SHOW_LOGS } from "./utils/env";
 import { formatToken, formatUSD } from "./utils/format";
-import type { Config, Data, Transaction } from "./types";
+import type { AccountActivity, Config, Data, Transaction } from "./types";
 import { getDrawdown } from "./utils/drawdown";
 
 // Helper function to log transactions
@@ -34,7 +34,11 @@ export function buy({
 
   const feeUSD = calculateFee(amountUSD, config.fee);
   const amountTokenMinusFee = (amountUSD - feeUSD) / price;
-  const balanceUSD = getNbUSD({ transactions: config.transactions, date });
+  const balanceUSD = getNbUSD({
+    transactions: config.transactions,
+    accountActivities: config.accountActivities,
+    date,
+  });
 
   if (balanceUSD < amountUSD && SHOW_LOGS) {
     console.error("Not enough balance");
@@ -109,13 +113,13 @@ export function sell({
 export function deposit({
   amountUSD,
   date,
-  transactions,
+  accountActivities,
 }: {
   amountUSD: number;
   date: Date;
-  transactions: Transaction[];
+  accountActivities: AccountActivity[];
 }) {
-  transactions.push({
+  accountActivities.push({
     amountUSD,
     date,
     type: "deposit",
@@ -127,12 +131,14 @@ export function withdraw({
   amountUSD,
   date,
   transactions,
+  accountActivities,
 }: {
   amountUSD: number;
   date: Date;
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
 }) {
-  const balanceUSD = getNbUSD({ transactions: transactions, date });
+  const balanceUSD = getNbUSD({ transactions, accountActivities, date });
 
   if (balanceUSD < amountUSD) {
     console.error(
@@ -143,7 +149,7 @@ export function withdraw({
     return;
   }
 
-  transactions.push({
+  accountActivities.push({
     amountUSD,
     date,
     type: "withdraw",
@@ -248,21 +254,31 @@ export function getNbTokenHistory({
 // Function to get the balance in USD
 export function getNbUSD({
   transactions,
+  accountActivities,
   date,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   date: Date;
 }) {
-  return transactions.reduce((acc, transaction) => {
+  const balanceActivities = accountActivities.reduce((acc, accountActivity) => {
+    if (accountActivity.date <= date) {
+      if (accountActivity.type === "deposit") {
+        return acc + accountActivity.amountUSD;
+      } else {
+        return acc - accountActivity.amountUSD;
+      }
+    } else {
+      return acc;
+    }
+  }, 0);
+
+  const balanceTransaction = transactions.reduce((acc, transaction) => {
     if (transaction.date > date) {
       return acc;
     }
 
     switch (transaction.type) {
-      case "deposit":
-        return acc + transaction.amountUSD;
-      case "withdraw":
-        return acc - transaction.amountUSD;
       case "buy":
         return (
           acc - transaction.amountToken * transaction.price - transaction.feeUSD
@@ -275,18 +291,26 @@ export function getNbUSD({
         return acc;
     }
   }, 0);
+
+  return balanceActivities + balanceTransaction;
 }
 
 // Function to get the balance in USD history
 export function getNbUSDHistory({
   transactions,
+  accountActivities,
   data,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   data: Data[];
 }) {
   return data.map((d) => {
-    const nbUSD = getNbUSD({ transactions, date: new Date(d.timestamp) });
+    const nbUSD = getNbUSD({
+      transactions,
+      accountActivities,
+      date: new Date(d.timestamp),
+    });
     return {
       timestamp: d.timestamp,
       nbUSD,
@@ -296,19 +320,19 @@ export function getNbUSDHistory({
 
 // Function to get the total investments in USD
 export function getInvestmentsUSD({
-  transactions,
+  accountActivities,
   date,
 }: {
-  transactions: Transaction[];
+  accountActivities: AccountActivity[];
   date: Date;
 }) {
-  return transactions.reduce((acc, transaction) => {
-    if (transaction.date > date) {
+  return accountActivities.reduce((acc, accountActivity) => {
+    if (accountActivity.date > date) {
       return acc;
     }
 
-    if (transaction.type === "deposit") {
-      return acc + transaction.amountUSD;
+    if (accountActivity.type === "deposit") {
+      return acc + accountActivity.amountUSD;
     } else {
       return acc;
     }
@@ -339,19 +363,21 @@ export function getFeesUSD({
 // Function to calculate the profit in USD
 export function getProfitUSD({
   transactions,
+  accountActivities,
   date,
   actualPrice,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   date: Date;
   actualPrice: number;
 }) {
   const investmentUSD = getInvestmentsUSD({
-    transactions: transactions,
+    accountActivities,
     date,
   });
   const feesUSD = getFeesUSD({ transactions, date });
-  const balanceUSD = getNbUSD({ transactions, date });
+  const balanceUSD = getNbUSD({ transactions, accountActivities, date });
   const tokenToUSD = getNbToken({ transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
@@ -361,15 +387,18 @@ export function getProfitUSD({
 // Function to get the profit in USD history
 export function getProfitUSDHistory({
   transactions,
+  accountActivities,
   data,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   data: Data[];
 }) {
   return data.map((d) => {
     const actualPrice = d.close;
     const profitUSD = getProfitUSD({
       transactions,
+      accountActivities,
       date: new Date(d.timestamp),
       actualPrice,
     });
@@ -383,16 +412,18 @@ export function getProfitUSDHistory({
 // Function to calculate the profit percentage
 export function getProfitPercentage({
   transactions,
+  accountActivities,
   date,
   actualPrice,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   date: Date;
   actualPrice: number;
 }) {
-  const investmentUSD = getInvestmentsUSD({ transactions, date });
+  const investmentUSD = getInvestmentsUSD({ accountActivities, date });
   const feesUSD = getFeesUSD({ transactions, date });
-  const balanceUSD = getNbUSD({ transactions, date });
+  const balanceUSD = getNbUSD({ transactions, accountActivities, date });
   const tokenToUSD = getNbToken({ transactions, date }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
 
@@ -402,15 +433,18 @@ export function getProfitPercentage({
 // Function to get the profit percentage history
 export function getProfitPercentageHistory({
   transactions,
+  accountActivities,
   data,
 }: {
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   data: Data[];
 }) {
   return data.map((d) => {
     const actualPrice = d.close;
     const profitPercentage = getProfitPercentage({
       transactions,
+      accountActivities,
       date: new Date(d.timestamp),
       actualPrice,
     });
@@ -425,17 +459,23 @@ export function getProfitPercentageHistory({
 export function calculateMetrics({
   endDate,
   transactions,
+  accountActivities,
   data,
 }: {
   endDate: Date;
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   data: Data[];
 }) {
   const actualPrice = data[data.length - 1].close;
 
   // Memoize repeated calculations
-  const balanceUSD = getNbUSD({ transactions, date: endDate });
-  const investmentUSD = getInvestmentsUSD({ transactions, date: endDate });
+  const balanceUSD = getNbUSD({
+    transactions,
+    accountActivities,
+    date: endDate,
+  });
+  const investmentUSD = getInvestmentsUSD({ accountActivities, date: endDate });
   const tokenToUSD = getNbToken({ transactions, date: endDate }) * actualPrice;
   const totalUSD = balanceUSD + tokenToUSD;
   const feesUSD = getFeesUSD({ transactions, date: endDate });
@@ -446,6 +486,7 @@ export function calculateMetrics({
   const profitPercentageHistory = getProfitPercentageHistory({
     data,
     transactions,
+    accountActivities,
   }).map((b) => b.profitPercentage);
 
   const drawdown = getDrawdown({ values: profitPercentageHistory });

@@ -16,8 +16,13 @@ export type Transaction =
       type: "sell";
       // Fee included in the amountToken sold
       feeUSD: number;
-    }
-  | { amountUSD: number; date: Date; type: "deposit" | "withdraw" };
+    };
+
+export type AccountActivity = {
+  amountUSD: number;
+  date: Date;
+  type: "deposit" | "withdraw";
+};
 
 export type Interval = "1d" | "1w" | "1mn" | "1y";
 
@@ -28,6 +33,7 @@ export interface Config {
   start_date: string;
   end_date: string;
   transactions: Transaction[];
+  accountActivities: AccountActivity[];
   interval: Interval;
 }
 

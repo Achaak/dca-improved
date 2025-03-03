@@ -10,6 +10,7 @@ const defaultConfig: Config = {
   start_date: "2016-01-01",
   end_date: "2025-01-01",
   transactions: [],
+  accountActivities: [],
   interval: "1mn",
 };
 

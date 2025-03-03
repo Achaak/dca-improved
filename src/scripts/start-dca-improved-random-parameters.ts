@@ -83,6 +83,7 @@ for (let i = 0; i < nbIterations; i++) {
   const allProfit = results.map((r) => {
     return getProfitUSD({
       transactions: r.config.transactions,
+      accountActivities: r.config.accountActivities,
       date: new Date(r.data[r.data.length - 1].timestamp),
       actualPrice: r.data[r.data.length - 1].close,
     });
