@@ -35,21 +35,17 @@ type Iteration = {
   profitAvg: number;
   totalTokenBuyRatio: number[];
 };
-const iterations: Iteration[] = [];
+let iterations: Iteration[] = [];
+
+function random(min: number, max: number) {
+  return Math.random() * (max - min) + min;
+}
 
 for (let i = 0; i < nbIterations; i++) {
-  // Between 1 and 3
-  const ratioOverToSell = Math.random() * 2 + 1;
-  // Between 1 and 5 but upper than ratioOverToSell
-  const ratioUnderToBuy = Math.random() * 4 + Math.max(1, ratioOverToSell);
-  // Between 0.01 and 1
-  const totalTokenSellRatio = Math.random() * 0.99 + 0.01;
-  const totalTokenBuyRatio = [
-    // Between 0.05 and 2.5
-    Math.random() * 2.45 + 0.05,
-    // Between 1 and 3
-    Math.random() * 2 + 1,
-  ];
+  const ratioUnderToBuy = random(1, 4);
+  const ratioOverToSell = random(ratioUnderToBuy, Math.max(5, ratioUnderToBuy));
+  const totalTokenSellRatio = random(0.01, 1);
+  const totalTokenBuyRatio = [random(0.05, 3), random(1, 4)];
 
   // Run the comparison for the specified number of runs
   const results = await Promise.all(
@@ -93,15 +89,7 @@ for (let i = 0; i < nbIterations; i++) {
   });
   const profitAvg = average(allProfit);
 
-  // Log the metrics
-  console.table({
-    "Average profit": profitAvg,
-    "Ratio over to sell": ratioOverToSell,
-    "Ratio under to buy": ratioUnderToBuy,
-    "Total token sell ratio": totalTokenSellRatio,
-    "Total token buy ratio": totalTokenBuyRatio.join(" - "),
-  });
-
+  console.log(`Iteration ${i + 1} - Profit avg: ${profitAvg.toFixed(2)}`);
   iterations.push({
     ratioOverToSell,
     ratioUnderToBuy,
@@ -109,15 +97,21 @@ for (let i = 0; i < nbIterations; i++) {
     profitAvg,
     totalTokenBuyRatio,
   });
+
+  iterations = iterations
+    .toSorted((a, b) => b.profitAvg - a.profitAvg)
+    .slice(0, 20);
+
+  // Top 20 max profit
+  console.table(
+    iterations.map((i) => ({
+      "Profit avg": i.profitAvg.toFixed(2),
+      "Ratio over to sell": i.ratioOverToSell.toFixed(2),
+      "Ratio under to buy": i.ratioUnderToBuy.toFixed(2),
+      "Total token sell ratio": i.totalTokenSellRatio.toFixed(2),
+      "Total token buy ratio": i.totalTokenBuyRatio
+        .map((r) => r.toFixed(2))
+        .join(" - "),
+    }))
+  );
 }
-
-const sortedIterations = iterations.toSorted(
-  (a, b) => b.profitAvg - a.profitAvg
-);
-
-// Top 100 max profit
-console.table(
-  sortedIterations
-    .slice(0, 100)
-    .map((i) => ({ ...i, profitAvg: i.profitAvg.toFixed(2) }))
-);
