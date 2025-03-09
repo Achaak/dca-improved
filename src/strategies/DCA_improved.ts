@@ -17,16 +17,16 @@ import { generateId } from "../utils/generate-id";
 
 // Default ratio functions with memoization
 const defaultCalculateSellRatio = (nbLastSell: number) => {
-  return Math.min(0.05 * (nbLastSell + 1), 1);
-  // const ratio = [
-  //   0.05, 0.05, 0.05, 0.05, 0.15, 0.15, 0.15, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25,
-  //   0.25,
-  // ];
-  // return ratio[nbLastSell] || 0.25;
+  // return Math.min(0.05 * (nbLastSell + 1), 1);
+  const ratio = [
+    0.05, 0.05, 0.05, 0.05, 0.15, 0.15, 0.15, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25,
+    0.25,
+  ];
+  return ratio[nbLastSell] || 0.25;
 };
 
 const defaultCalculateBuyRatio = (nbLastBuy: number) => {
-  return Math.min(0.25 * (nbLastBuy + 1), 1);
+  return Math.min(0.5 * (nbLastBuy + 1), 1);
 };
 
 export async function DCAImproved({

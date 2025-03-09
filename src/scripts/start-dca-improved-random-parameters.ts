@@ -54,7 +54,7 @@ const BATCH_SIZE = Math.min(nbOfRunsByIteration, 10); // Process in batches of 1
 for (let i = 0; i < nbIterations; i++) {
   const sellRatioValue = random(0.05, 1);
   const buyRatioValue = random(0.1, 1);
-  const ratioBetweenSells = random(0.01, 1);
+  const ratioBetweenSells = random(0.1, 1);
 
   // Create calculation functions once per iteration
   const calculateSellRatio = createCalculateSellRatio(sellRatioValue);
