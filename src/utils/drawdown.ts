@@ -64,11 +64,9 @@ export function getLastBigVariation({
   data,
   windowSize,
 }: {
-  data: Array<{ timestamp: number; close: number }>;
+  data: { timestamp: number; close: number }[];
   windowSize: number;
 }): VariationResult {
-  // Define the return type with grouped data for better organization
-
   // Handle empty data case
   if (data.length === 0) {
     throw new Error("Data array cannot be empty");
