@@ -70,18 +70,13 @@ export function formateData({
   let validItemIndex = -DAYS_PRE_FETCH; // Track index for interval calculations
 
   for (const d of data) {
-    const timestamp =
-      typeof d.timestamp === "number"
-        ? d.timestamp
-        : new Date(d.timestamp).getTime();
-
     // Skip items outside our time range
-    if (timestamp < minTimestamp || timestamp > endTimestamp) {
+    if (d.timestamp < minTimestamp || d.timestamp > endTimestamp) {
       continue;
     }
 
     validItemIndex++;
-    const isDataPrefetch = timestamp < startTimestamp;
+    const isDataPrefetch = d.timestamp < startTimestamp;
 
     if (isDataPrefetch) {
       dataFiltered.push({

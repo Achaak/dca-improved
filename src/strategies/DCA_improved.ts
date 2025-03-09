@@ -16,11 +16,18 @@ import { formatUSD } from "../utils/format";
 import { generateId } from "../utils/generate-id";
 
 // Default ratio functions with memoization
-const defaultCalculateSellRatio = (nbLastSell: number) =>
-  Math.min(0.08 * (nbLastSell + 1), 1);
+const defaultCalculateSellRatio = (nbLastSell: number) => {
+  return Math.min(0.05 * (nbLastSell + 1), 1);
+  // const ratio = [
+  //   0.05, 0.05, 0.05, 0.05, 0.15, 0.15, 0.15, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25,
+  //   0.25,
+  // ];
+  // return ratio[nbLastSell] || 0.25;
+};
 
-const defaultCalculateBuyRatio = (nbLastBuy: number) =>
-  Math.min(0.3 * (nbLastBuy + 1), 1);
+const defaultCalculateBuyRatio = (nbLastBuy: number) => {
+  return Math.min(0.25 * (nbLastBuy + 1), 1);
+};
 
 export async function DCAImproved({
   config,
@@ -62,9 +69,9 @@ export async function DCAImproved({
       windowSize: getIntervalInDays("1y") * YEARS_PRE_FETCH,
     });
 
-    const priceUnderToBuy =
-      averageCost * (variation.analysis.percentChange / 2);
-    const priceOverToSell = averageCost * variation.analysis.annualizedRate;
+    const priceUnderToBuy = averageCost * variation.analysis.annualizedRate;
+    const priceOverToSell =
+      (averageCost * variation.analysis.percentChange) / 2;
     const nbToken = getNbToken({ config, timestamp: d.timestamp });
 
     // Execute buy or sell strategy
@@ -224,7 +231,7 @@ function shouldSell({
   const lastSell = transactions.find((t) => t.type === "sell");
 
   // Don't sell if the last sell price was significantly higher
-  if (lastSell && lastSell.price > price * (1 + ratioBetweenSells)) {
+  if (lastSell && price > lastSell.price * (1 + ratioBetweenSells)) {
     return false;
   }
 

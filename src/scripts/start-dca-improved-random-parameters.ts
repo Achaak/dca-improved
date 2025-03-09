@@ -75,13 +75,16 @@ for (let i = 0; i < nbIterations; i++) {
         const c = structuredClone(config);
 
         const randomDateRange = getRandomDateRange(c, nbOfDays);
-        c.start_date = randomDateRange.start_date;
-        c.end_date = randomDateRange.end_date;
+        const start_date = new Date(randomDateRange.start_date);
+        const end_date = new Date(randomDateRange.end_date);
+
+        c.start_date = start_date.toISOString().split("T")[0];
+        c.end_date = end_date.toISOString().split("T")[0];
 
         const data = formateData({
           data: jsonItem,
-          startDate: new Date(c.start_date),
-          endDate: new Date(c.end_date),
+          startDate: start_date,
+          endDate: end_date,
         });
 
         const result = await DCAImproved({
