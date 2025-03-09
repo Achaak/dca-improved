@@ -8,17 +8,6 @@ import { formateData, getData } from "../utils/data";
 import { getRandomDateRange } from "../utils/get-random-date-range";
 import type { Config, Data } from "../types";
 
-// Load the existing configuration
-const config = await getConfig();
-
-// Fetch data based on the configuration
-const jsonItem = await getData({
-  token: config.token,
-  startDate: new Date(config.start_date),
-  endDate: new Date(config.end_date),
-});
-const data = formateData(jsonItem, config.interval);
-
 // Parse command line arguments
 const args = Bun.argv.slice(2);
 const nbOfRuns = args.includes("--nb-of-runs")
@@ -28,30 +17,46 @@ const nbOfDays = args.includes("--nb-of-days")
   ? parseInt(args[args.indexOf("--nb-of-days") + 1])
   : 365;
 
-let runFinished = 0;
+// Load the existing configuration
+const config = await getConfig();
+
+// Fetch data based on the configuration
+const jsonItem = await getData({
+  token: config.token,
+  startDate: new Date(config.start_date),
+  endDate: new Date(config.end_date),
+});
+
+// Pre-parse dates from jsonItem to avoid repeated parsing
+const parsedDates = jsonItem.map((item) => new Date(item.timestamp));
+const originalData = jsonItem.map((item, index) => ({
+  item,
+  date: parsedDates[index],
+}));
+
 const spinner = ora(`Running DCACompare for ${nbOfRuns} runs...`).start();
 
 // Run the comparison for the specified number of runs
 const results = await Promise.all(
-  Array.from({ length: nbOfRuns }).map(async (_, i) => {
+  Array.from({ length: nbOfRuns }).map(async () => {
     const c = structuredClone(config);
 
     const randomDateRange = getRandomDateRange(c, nbOfDays);
     c.start_date = randomDateRange.start_date;
     c.end_date = randomDateRange.end_date;
 
-    const d = structuredClone(data).filter(
-      (d) =>
-        new Date(d.timestamp) >= new Date(c.start_date) &&
-        new Date(d.timestamp) <= new Date(c.end_date) &&
-        d.useInStrategy
-    );
+    // Parse date range once
+    const startDate = new Date(c.start_date);
+    const endDate = new Date(c.end_date);
 
-    const result = await DCACompare(c, d);
+    // Filter data more efficiently using pre-parsed dates
+    const filteredData = originalData
+      .filter(({ date }) => date >= startDate && date <= endDate)
+      .map(({ item }) => item);
 
-    runFinished++;
+    const data = formateData(filteredData);
 
-    return result;
+    return await DCACompare(c, data);
   })
 );
 
@@ -65,8 +70,7 @@ function calculateAverageMetrics(
 ) {
   const metrics = results.map((r) =>
     calculateMetrics({
-      transactions: r.config.transactions,
-      accountActivities: r.config.accountActivities,
+      config: r.config,
       data: r.data,
       endDate: new Date(r.data[r.data.length - 1].timestamp),
     })

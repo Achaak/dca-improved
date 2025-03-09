@@ -13,21 +13,19 @@ const jsonItem = await getData({
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
-const data = formateData(jsonItem, config.interval);
+const data = formateData(jsonItem);
 
 // Run the DCA comparison
 const { resultDAC, resultDCAImproved } = await DCACompare(config, data);
 
 const DCAMetrics = calculateMetrics({
-  accountActivities: resultDAC.config.accountActivities,
-  transactions: resultDAC.config.transactions,
+  config: resultDAC.config,
   data: resultDAC.data,
   endDate: new Date(resultDAC.data[resultDAC.data.length - 1].timestamp),
 });
 
 const DCAImprovedMetrics = calculateMetrics({
-  accountActivities: resultDCAImproved.config.accountActivities,
-  transactions: resultDCAImproved.config.transactions,
+  config: resultDCAImproved.config,
   data: resultDCAImproved.data,
   endDate: new Date(
     resultDCAImproved.data[resultDCAImproved.data.length - 1].timestamp

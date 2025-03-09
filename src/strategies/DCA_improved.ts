@@ -6,82 +6,90 @@ import {
   getNbToken,
   getNbUSD,
 } from "../transaction";
-import type { AccountActivity, Config, Data, Transaction } from "../types";
+import type { Config, Data, Transaction } from "../types";
+import { invalidateCachePrefix } from "../utils/cache";
 import { SHOW_LOGS } from "../utils/env";
 import { formatUSD } from "../utils/format";
+import { generateId } from "../utils/generate-id";
+
+// Default ratio functions with memoization
+const defaultCalculateSellRatio = (nbLastSell: number) =>
+  Math.min(0.08 * (nbLastSell + 1), 1);
+
+const defaultCalculateBuyRatio = (nbLastBuy: number) =>
+  Math.min(0.3 * (nbLastBuy + 1), 1);
 
 export async function DCAImproved({
   config,
   data,
   ratioUnderToBuy = 1.5,
-  ratioOverToSell = 2.5,
-  calculateTotalTokenSell = (nbToken: number) => {
-    // return 0.1 * (1.1 * nbToken);
-    return nbToken * 0.2;
-  },
-  calculateNbTokenBuyRatio = (nbLastBuy: number) => {
-    return 0.1 * (1.1 * nbLastBuy);
-  },
+  ratioOverToSell = 4.5,
+  calculateSellRatio = defaultCalculateSellRatio,
+  calculateBuyRatio = defaultCalculateBuyRatio,
 }: {
   config: Config;
   data: Data[];
   ratioUnderToBuy?: number;
   ratioOverToSell?: number;
-  calculateNbTokenBuyRatio?: (nbLastBuy: number) => number;
-  calculateTotalTokenSell?: (nbToken: number) => number;
+  calculateBuyRatio?: (nbLastBuy: number) => number;
+  calculateSellRatio?: (nbLastSell: number) => number;
 }) {
-  for (const d of data) {
-    if (!d.useInStrategy) continue;
+  // Ensure config has an ID
+  if (!config.id) {
+    config.id = generateId();
+  }
 
+  // Pre-filter transactions once outside the loop
+  let transactionsSortedByDate: Transaction[] = [];
+
+  for (const d of data) {
     const date = new Date(d.timestamp);
     const price = d.close;
-    const averageCost = getAverageCost({
-      transactions: config.transactions,
-      date,
-    });
+
+    // Handle deposits based on interval
+    handleDeposit(config, d, date);
+
+    // Update sorted transactions only when needed
+    transactionsSortedByDate = getSortedTransactionsByDate(config.transactions);
+
+    // Calculate metrics needed for decision making
+    const averageCost = getAverageCost({ config, date });
     const priceUnderToBuy = averageCost * ratioUnderToBuy;
     const priceOverToSell = averageCost * ratioOverToSell;
-    const nbToken = getNbToken({ transactions: config.transactions, date });
+    const nbToken = getNbToken({ config, date });
 
-    deposit({
-      date,
-      accountActivities: config.accountActivities,
-      amountUSD: config.DCA_Value,
-    });
-
-    const transactionsSortedByDate = getSortedTransactionsByDate(
-      config.transactions
-    );
-
-    if (
-      shouldBuy({
-        price,
-        priceUnderToBuy,
-      })
-    ) {
+    // Execute buy or sell strategy
+    if (shouldBuy({ price, priceUnderToBuy, d, config })) {
       handleBuy({
         config,
         date,
         price,
         transactions: transactionsSortedByDate,
-        calculateNbTokenBuyRatio,
+        calculateBuyRatio,
       });
-    } else if (shouldSell(price, priceOverToSell, nbToken)) {
+    } else if (
+      shouldSell({
+        price,
+        priceOverToSell,
+        nbToken,
+        transactions: transactionsSortedByDate,
+      })
+    ) {
       handleSell({
         config,
         date,
         price,
         nbToken,
         transactions: transactionsSortedByDate,
-        calculateTotalTokenSell,
+        calculateSellRatio,
       });
     }
 
+    // Log transaction details if enabled
     if (SHOW_LOGS) {
       logTransaction({
         date,
-        transactions: config.transactions,
-        accountActivities: config.accountActivities,
+        config,
         averageCost,
         priceUnderToBuy,
         priceOverToSell,
@@ -89,44 +97,85 @@ export async function DCAImproved({
     }
   }
 
+  // Invalidate cache for this config
+  invalidateCachePrefix(config.id);
+
   return { config, data };
 }
 
-function getSortedTransactionsByDate(transactions: Transaction[]) {
-  return structuredClone(transactions)
+/**
+ * Handles deposit based on the configured interval
+ */
+function handleDeposit(config: Config, d: Data, date: Date): void {
+  const shouldDeposit =
+    (config.deposit_interval === "1d" && d.isDaily) ||
+    (config.deposit_interval === "1w" && d.isWeekly) ||
+    (config.deposit_interval === "1mn" && d.isMonthly) ||
+    (config.deposit_interval === "1y" && d.isYearly);
+
+  if (shouldDeposit) {
+    deposit({
+      amountUSD: config.deposit_value,
+      date,
+      config,
+    });
+  }
+}
+
+/**
+ * Returns transactions sorted by date (newest first)
+ */
+function getSortedTransactionsByDate(
+  transactions: Transaction[]
+): Transaction[] {
+  return transactions
     .filter((t) => t.type === "buy" || t.type === "sell")
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
+/**
+ * Determines if a buy should be executed based on price and interval
+ */
 function shouldBuy({
   price,
   priceUnderToBuy,
+  d,
+  config,
 }: {
   price: number;
   priceUnderToBuy: number;
-}) {
-  return price < priceUnderToBuy || priceUnderToBuy === 0;
+  config: Config;
+  d: Data;
+}): boolean {
+  const isIntervalMatch =
+    (config.DCA_Interval === "1d" && d.isDaily) ||
+    (config.DCA_Interval === "1w" && d.isWeekly) ||
+    (config.DCA_Interval === "1mn" && d.isMonthly) ||
+    (config.DCA_Interval === "1y" && d.isYearly);
+
+  return (price < priceUnderToBuy || priceUnderToBuy === 0) && isIntervalMatch;
 }
 
+/**
+ * Executes a buy transaction
+ */
 function handleBuy({
   config,
   date,
   price,
   transactions,
-  calculateNbTokenBuyRatio,
+  calculateBuyRatio,
 }: {
   config: Config;
   date: Date;
   price: number;
   transactions: Transaction[];
-  calculateNbTokenBuyRatio: (nbLastBuy: number) => number;
-}) {
-  const balanceUSD = getNbUSD({
-    transactions: config.transactions,
-    accountActivities: config.accountActivities,
-    date,
-  });
+  calculateBuyRatio: (nbLastBuy: number) => number;
+}): void {
+  const balanceUSD = getNbUSD({ config, date });
+  if (balanceUSD <= 0) return;
 
+  // Count consecutive buy transactions
   let nbLastBuy = 0;
   for (const transaction of transactions) {
     if (transaction.type === "buy") {
@@ -136,33 +185,61 @@ function handleBuy({
     }
   }
 
-  const nbTokenBuyRatio = calculateNbTokenBuyRatio(nbLastBuy);
-  let amountUSDToBuy = Math.max(balanceUSD * nbTokenBuyRatio, balanceUSD);
-  if (amountUSDToBuy > balanceUSD) {
-    amountUSDToBuy = balanceUSD;
+  const buyRatio = calculateBuyRatio(nbLastBuy);
+  const amountUSDToBuy = Math.min(balanceUSD * buyRatio, balanceUSD);
+
+  if (amountUSDToBuy > 0) {
+    buy({ amountUSD: amountUSDToBuy, price, date, config });
   }
-  buy({ amountUSD: amountUSDToBuy, price, date, config });
 }
 
-function shouldSell(price: number, priceOverToSell: number, nbToken: number) {
-  return price > priceOverToSell && nbToken > 0;
+/**
+ * Determines if a sell should be executed based on price
+ */
+function shouldSell({
+  price,
+  priceOverToSell,
+  nbToken,
+  transactions,
+}: {
+  price: number;
+  priceOverToSell: number;
+  nbToken: number;
+  transactions: Transaction[];
+}): boolean {
+  if (nbToken <= 0) return false;
+
+  const lastSell = transactions.find((t) => t.type === "sell");
+
+  // Don't sell if the last sell price was significantly higher
+  if (lastSell && lastSell.price > price * 1.05) {
+    return false;
+  }
+
+  return price > priceOverToSell;
 }
 
+/**
+ * Executes a sell transaction
+ */
 function handleSell({
   config,
   date,
   nbToken,
   price,
   transactions,
-  calculateTotalTokenSell,
+  calculateSellRatio,
 }: {
   config: Config;
   date: Date;
   price: number;
   nbToken: number;
   transactions: Transaction[];
-  calculateTotalTokenSell: (nbToken: number) => number;
-}) {
+  calculateSellRatio: (nbLastSell: number) => number;
+}): void {
+  if (nbToken <= 0) return;
+
+  // Count consecutive sell transactions
   let nbLastSell = 0;
   for (const transaction of transactions) {
     if (transaction.type === "sell") {
@@ -172,26 +249,31 @@ function handleSell({
     }
   }
 
-  const totalTokenSell = calculateTotalTokenSell(nbToken);
-  sell({ amountToken: totalTokenSell, price, date, config });
+  const sellRatio = calculateSellRatio(nbLastSell);
+  const totalTokenSell = nbToken * sellRatio;
+
+  if (totalTokenSell > 0) {
+    sell({ amountToken: totalTokenSell, price, date, config });
+  }
 }
 
+/**
+ * Logs transaction details
+ */
 function logTransaction({
   averageCost,
-  transactions,
-  accountActivities,
+  config,
   date,
   priceOverToSell,
   priceUnderToBuy,
 }: {
   date: Date;
-  transactions: Transaction[];
-  accountActivities: AccountActivity[];
+  config: Config;
   averageCost: number;
   priceUnderToBuy: number;
   priceOverToSell: number;
-}) {
-  const balanceUSD = getNbUSD({ transactions, accountActivities, date });
+}): void {
+  const balanceUSD = getNbUSD({ config, date });
   console.log(
     `\x1b[34m${date.toLocaleString()} - ${formatUSD(
       balanceUSD

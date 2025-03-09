@@ -18,25 +18,25 @@ export function getArgEndDate(args: string[]) {
   }
 }
 
-export function getArgDCAValues(args: string[]) {
+export function getArgDepositValues(args: string[]) {
   if (args.includes("-v")) {
     return parseFloat(args[args.indexOf("-v") + 1]);
   }
 }
 
-export function getArgIntervals(args: string[]) {
+export function getArgDCAIntervals(args: string[]) {
   if (args.includes("-i")) {
-    const interval = args[args.indexOf("-i") + 1];
+    const DCAInterval = args[args.indexOf("-i") + 1];
 
-    if (!["1d", "1w", "1mn", "1y"].includes(interval)) {
+    if (!["1d", "1w", "1mn", "1y"].includes(DCAInterval)) {
       console.error(
-        `❌ Invalid interval "${interval}", must be one of: 1d, 1w, 1mn, 1y`
+        `❌ Invalid DCA interval "${DCAInterval}", must be one of: 1d, 1w, 1mn, 1y`
       );
 
       process.exit(1);
     }
 
-    return interval as Config["interval"];
+    return DCAInterval as Config["DCA_Interval"];
   }
 }
 

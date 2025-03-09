@@ -27,6 +27,7 @@ export async function getData({
       instrument: `${token}usd` as any,
       format: "json",
       cacheFolderPath: path.join(__dirname, "../../.dukascopy-cache/"),
+      useCache: true,
     });
 
     spinner.succeed("Data fetched successfully");
@@ -37,12 +38,16 @@ export async function getData({
   }
 }
 
-export function formateData(data: JsonItem[], interval: Interval) {
-  const intervalInDays = getIntervalInDays(interval);
-  const dataFiltered: Data[] = data.map((d, i) => ({
-    ...d,
-    useInStrategy: i % intervalInDays === 0,
-  }));
+export function formateData(data: JsonItem[]) {
+  const dataFiltered: Data[] = data.map((d, i) => {
+    return {
+      ...d,
+      isYearly: i % getIntervalInDays("1y") === 0,
+      isMonthly: i % getIntervalInDays("1mn") === 0,
+      isWeekly: i % getIntervalInDays("1w") === 0,
+      isDaily: i % getIntervalInDays("1d") === 0,
+    };
+  });
 
   return dataFiltered;
 }

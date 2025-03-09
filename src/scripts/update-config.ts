@@ -1,9 +1,9 @@
 import {
   getArgConfigName,
-  getArgDCAValues,
+  getArgDepositValues,
   getArgEndDate,
   getArgFees,
-  getArgIntervals,
+  getArgDCAIntervals,
   getArgStartDate,
 } from "../utils/args";
 import { getConfig, writeConfig } from "../utils/config";
@@ -25,14 +25,14 @@ if (endDate) {
   config.end_date = endDate;
 }
 
-const DCAValue = getArgDCAValues(args);
-if (DCAValue) {
-  config.DCA_Value = DCAValue;
+const depositValue = getArgDepositValues(args);
+if (depositValue) {
+  config.deposit_value = depositValue;
 }
 
-const interval = getArgIntervals(args);
-if (interval) {
-  config.interval = interval;
+const DCAInterval = getArgDCAIntervals(args);
+if (DCAInterval) {
+  config.DCA_Interval = DCAInterval;
 }
 
 const fee = getArgFees(args);

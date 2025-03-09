@@ -29,14 +29,19 @@ export type Interval = "1d" | "1w" | "1mn" | "1y";
 export interface Config {
   fee: number;
   token: string;
-  DCA_Value: number;
+  DCA_Interval: Interval;
+  deposit_value: number;
+  deposit_interval: Interval;
   start_date: string;
   end_date: string;
   transactions: Transaction[];
   accountActivities: AccountActivity[];
-  interval: Interval;
+  id?: string;
 }
 
 export interface Data extends JsonItem {
-  useInStrategy: boolean;
+  isYearly: boolean;
+  isMonthly: boolean;
+  isWeekly: boolean;
+  isDaily: boolean;
 }

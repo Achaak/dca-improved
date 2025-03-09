@@ -63,12 +63,12 @@ export function showMetrics({
     profitPercentage,
     nbOfSells,
     nbOfBuys,
+    tokenToUSD,
     drawdown: { peak: drawdownPeak, trough: drawdownTrough },
   } = calculateMetrics({
-    transactions: config.transactions,
+    config,
     endDate,
     data,
-    accountActivities: config.accountActivities,
   });
 
   logTable("📅 Period and Token Information", {
@@ -79,12 +79,10 @@ export function showMetrics({
   logTable("💰 Balance and Investment Metrics", {
     "Balance (USD)": formatUSD(balanceUSD),
     [`Number of ${config.token.toUpperCase()}`]: formatToken(
-      getNbToken({ transactions: config.transactions, date: endDate })
+      getNbToken({ config, date: endDate })
     ),
-    "Average Cost (USD)": formatUSD(
-      getAverageCost({ transactions: config.transactions, date: endDate })
-    ),
-    "Total Value (USD)": formatUSD(totalUSD),
+    [`${config.token.toUpperCase()} to USD`]: formatUSD(tokenToUSD),
+    "Average Cost (USD)": formatUSD(getAverageCost({ config, date: endDate })),
     "Investment (USD)": formatUSD(investmentUSD),
     "Fees (USD)": formatUSD(feesUSD),
     "Total (USD)": formatUSD(totalUSD),

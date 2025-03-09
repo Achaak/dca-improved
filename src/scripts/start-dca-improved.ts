@@ -12,7 +12,7 @@ const jsonItem = await getData({
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
-const data = formateData(jsonItem, config.interval);
+const data = formateData(jsonItem);
 
 // Run the DCA Improved strategy
 const { config: updatedConfig } = await DCAImproved({ config, data });

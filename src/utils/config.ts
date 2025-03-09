@@ -27,7 +27,19 @@ export async function getConfig() {
     spinner.start(`Importing config file: ${configFilePath}`);
     const configModule = await import(configFilePath);
     spinner.succeed(`Config file imported successfully: ${configFilePath}`);
-    return configModule.default as Config;
+
+    const config = configModule.default as Config;
+    return {
+      ...configModule.default,
+      transactions: config.transactions.map((t: any) => ({
+        ...t,
+        date: new Date(t.date),
+      })),
+      accountActivities: config.accountActivities.map((a: any) => ({
+        ...a,
+        date: new Date(a.date),
+      })),
+    } as Config;
   } catch (error) {
     const errorMessage = `Error importing config file at ${configFilePath}: ${
       error instanceof Error ? error.message : error
