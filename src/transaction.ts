@@ -20,12 +20,12 @@ function calculateFee(amountUSD: number, feeRate: number): number {
 export function buy({
   amountUSD,
   price,
-  date,
+  timestamp,
   config,
 }: {
   amountUSD: number;
   price: number;
-  date: Date;
+  timestamp: number;
   config: Config;
 }) {
   if (amountUSD <= 0) {
@@ -37,7 +37,7 @@ export function buy({
 
   const feeUSD = calculateFee(amountUSD, config.fee);
   const amountTokenMinusFee = (amountUSD - feeUSD) / price;
-  const balanceUSD = getNbUSD({ config, date });
+  const balanceUSD = getNbUSD({ config, timestamp });
 
   if (balanceUSD < amountUSD) {
     if (SHOW_LOGS) {
@@ -49,7 +49,7 @@ export function buy({
   config.transactions.push({
     amountToken: amountTokenMinusFee,
     price,
-    date,
+    timestamp,
     type: "buy",
     feeUSD,
   });
@@ -61,9 +61,9 @@ export function buy({
       amountUSD
     )} USD at ${formatUSD(
       price
-    )} USD/${config.token.toUpperCase()} on ${date.toLocaleString()}. Fee: ${formatUSD(
-      feeUSD
-    )} USD \x1b[0m`
+    )} USD/${config.token.toUpperCase()} on ${new Date(
+      timestamp
+    ).toLocaleString()}. Fee: ${formatUSD(feeUSD)} USD \x1b[0m`
   );
 }
 
@@ -71,15 +71,15 @@ export function buy({
 export function sell({
   amountToken,
   price,
-  date,
+  timestamp,
   config,
 }: {
   amountToken: number;
   price: number;
-  date: Date;
+  timestamp: number;
   config: Config;
 }) {
-  const totalTokens = getNbToken({ config, date });
+  const totalTokens = getNbToken({ config, timestamp });
 
   if (totalTokens < amountToken && SHOW_LOGS) {
     console.error(`Not enough ${config.token.toUpperCase()}`);
@@ -92,7 +92,7 @@ export function sell({
   config.transactions.push({
     amountToken,
     price,
-    date,
+    timestamp,
     type: "sell",
     feeUSD,
   });
@@ -104,46 +104,52 @@ export function sell({
       amountUSD
     )} USD at ${formatUSD(
       price
-    )} USD/${config.token.toUpperCase()} on ${date.toLocaleString()}. Fee: ${formatUSD(
-      feeUSD
-    )} USD \x1b[0m`
+    )} USD/${config.token.toUpperCase()} on ${new Date(
+      timestamp
+    ).toLocaleString()}. Fee: ${formatUSD(feeUSD)} USD \x1b[0m`
   );
 }
 
 // Function to handle deposits
 export function deposit({
   amountUSD,
-  date,
+  timestamp,
   config,
 }: {
   amountUSD: number;
-  date: Date;
+  timestamp: number;
   config: Config;
 }) {
   const { accountActivities } = config;
 
   accountActivities.push({
     amountUSD,
-    date,
+    timestamp,
     type: "deposit",
   });
+
+  logTransaction(
+    `\x1b[36m Deposited ${formatUSD(amountUSD)} USD on ${new Date(
+      timestamp
+    ).toLocaleString()} \x1b[0m`
+  );
 }
 
 // Function to handle withdrawals
 export function withdraw({
   amountUSD,
-  date,
+  timestamp,
   config,
 }: {
   amountUSD: number;
-  date: Date;
+  timestamp: number;
   config: Config;
 }) {
   const { accountActivities } = config;
 
   const balanceUSD = getNbUSD({
     config,
-    date,
+    timestamp,
   });
 
   if (balanceUSD < amountUSD) {
@@ -157,36 +163,34 @@ export function withdraw({
 
   accountActivities.push({
     amountUSD,
-    date,
+    timestamp,
     type: "withdraw",
   });
 }
 
 // Function to calculate the average cost of tokens
 export function getAverageCost({
-  date,
+  timestamp,
   config,
 }: {
-  date: Date;
+  timestamp: number;
   config: Config;
 }) {
   const { transactions } = config;
 
-  const cacheKey = getCacheKey("getAverageCost", config, [date]);
+  const cacheKey = getCacheKey("getAverageCost", config, [timestamp]);
 
   return memoize(cacheKey, () => {
     let totalCost = 0;
     let totalAmount = 0;
 
     // Convert date to timestamp for faster comparisons
-    const targetTimestamp = date.getTime();
 
     // Filter buy transactions without deep cloning
     const buyTransactions = transactions
       .filter(
         (transaction): transaction is Extract<Transaction, { type: "buy" }> =>
-          transaction.type === "buy" &&
-          transaction.date.getTime() <= targetTimestamp
+          transaction.type === "buy" && transaction.timestamp <= timestamp
       )
       // Sort by price (lowest first) for FIFO accounting
       .sort((a, b) => a.price - b.price);
@@ -195,8 +199,7 @@ export function getAverageCost({
     let totalSoldTokens = transactions
       .filter(
         (transaction): transaction is Extract<Transaction, { type: "sell" }> =>
-          transaction.type === "sell" &&
-          transaction.date.getTime() <= targetTimestamp
+          transaction.type === "sell" && transaction.timestamp <= timestamp
       )
       .reduce((acc, transaction) => acc + transaction.amountToken, 0);
 
@@ -232,17 +235,22 @@ export function getAverageCost({
 }
 
 // Function to get the number of tokens
-export function getNbToken({ config, date }: { date: Date; config: Config }) {
+export function getNbToken({
+  config,
+  timestamp,
+}: {
+  timestamp: number;
+  config: Config;
+}) {
   const { transactions } = config;
 
-  const cacheKey = getCacheKey("getNbToken", config, [date]);
+  const cacheKey = getCacheKey("getNbToken", config, [timestamp]);
 
   return memoize(cacheKey, () => {
     // Convert date to timestamp for faster comparisons
-    const targetTimestamp = date.getTime();
 
     return transactions.reduce((acc, transaction) => {
-      if (transaction.date.getTime() > targetTimestamp) {
+      if (transaction.timestamp > timestamp) {
         return acc;
       }
 
@@ -272,27 +280,25 @@ export function getNbTokenHistory({
   return memoize(
     cacheKey,
     () => {
-      // Pre-calculate dates to avoid repeated Date object creation
-      const dates = data.map((d) => new Date(d.timestamp));
-
       // Sort dates to potentially improve cache hits
-      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
 
       // Pre-calculate token balances for all dates
       const tokenBalances = new Map();
-      for (const date of sortedDates) {
-        const nbToken = getNbToken({
-          date,
+      let lastBalance = 0;
+      for (const { timestamp } of sortedData) {
+        lastBalance = getNbToken({
+          timestamp,
           config,
         });
-        tokenBalances.set(date.getTime(), nbToken);
+        tokenBalances.set(timestamp, lastBalance);
       }
 
       // Map the results back to the original data order
-      return data.map((d, index) => {
+      return data.map((d) => {
         return {
           timestamp: d.timestamp,
-          nbToken: tokenBalances.get(dates[index].getTime()),
+          nbToken: tokenBalances.get(d.timestamp),
         };
       });
     },
@@ -301,18 +307,21 @@ export function getNbTokenHistory({
 }
 
 // Function to get the balance in USD
-export function getNbUSD({ date, config }: { date: Date; config: Config }) {
+export function getNbUSD({
+  timestamp,
+  config,
+}: {
+  timestamp: number;
+  config: Config;
+}) {
   const { transactions, accountActivities } = config;
 
-  const cacheKey = getCacheKey("getNbUSD", config, [date]);
+  const cacheKey = getCacheKey("getNbUSD", config, [timestamp]);
 
   return memoize(cacheKey, () => {
-    // Convert date to timestamp for faster comparisons
-    const targetTimestamp = date.getTime();
-
     // Process transactions and account activities separately to avoid array concatenation
     const transactionsBalance = transactions.reduce((acc, entry) => {
-      if (entry.date.getTime() > targetTimestamp) {
+      if (entry.timestamp > timestamp) {
         return acc;
       }
 
@@ -326,7 +335,7 @@ export function getNbUSD({ date, config }: { date: Date; config: Config }) {
     }, 0);
 
     const activitiesBalance = accountActivities.reduce((acc, entry) => {
-      if (entry.date.getTime() > targetTimestamp) {
+      if (entry.timestamp > timestamp) {
         return acc;
       }
 
@@ -355,31 +364,28 @@ export function getNbUSDHistory({
   const cacheKey = getCacheKey("getNbUSDHistory", config, [data]);
   // Add a TTL of 5 minutes for history data
   const TTL = 5 * 60 * 1000;
-
   return memoize(
     cacheKey,
     () => {
-      // Pre-calculate dates to avoid repeated Date object creation
-      const dates = data.map((d) => new Date(d.timestamp));
-
       // Sort dates to potentially improve cache hits
-      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
 
       // Pre-calculate USD balances for all dates
       const usdBalances = new Map();
-      for (const date of sortedDates) {
-        const nbUSD = getNbUSD({
-          date,
+      let lastBalance = 0;
+      for (const { timestamp } of sortedData) {
+        lastBalance = getNbUSD({
+          timestamp,
           config,
         });
-        usdBalances.set(date.getTime(), nbUSD);
+        usdBalances.set(timestamp, lastBalance);
       }
 
       // Map the results back to the original data order
-      return data.map((d, index) => {
+      return data.map((d) => {
         return {
           timestamp: d.timestamp,
-          nbUSD: usdBalances.get(dates[index].getTime()),
+          nbUSD: usdBalances.get(d.timestamp),
         };
       });
     },
@@ -390,21 +396,18 @@ export function getNbUSDHistory({
 // Function to get the deposits in USD
 export function getDepositsUSD({
   config,
-  date,
+  timestamp,
 }: {
   config: Config;
-  date: Date;
+  timestamp: number;
 }) {
   const { accountActivities } = config;
 
-  const cacheKey = getCacheKey("getDepositsUSD", config, [date]);
+  const cacheKey = getCacheKey("getDepositsUSD", config, [timestamp]);
 
   return memoize(cacheKey, () => {
-    // Convert date to timestamp for faster comparisons
-    const targetTimestamp = date.getTime();
-
     return accountActivities.reduce((acc, accountActivity) => {
-      if (accountActivity.date.getTime() > targetTimestamp) {
+      if (accountActivity.timestamp > timestamp) {
         return acc;
       }
 
@@ -418,17 +421,22 @@ export function getDepositsUSD({
 }
 
 // Function to get the total fees in USD
-export function getFeesUSD({ config, date }: { config: Config; date: Date }) {
+export function getFeesUSD({
+  config,
+  timestamp,
+}: {
+  config: Config;
+  timestamp: number;
+}) {
   const { transactions } = config;
 
-  const cacheKey = getCacheKey("getFeesUSD", config, [date]);
+  const cacheKey = getCacheKey("getFeesUSD", config, [timestamp]);
 
   return memoize(cacheKey, () => {
     // Convert date to timestamp for faster comparisons
-    const targetTimestamp = date.getTime();
 
     return transactions.reduce((acc, transaction) => {
-      if (transaction.date.getTime() > targetTimestamp) {
+      if (transaction.timestamp > timestamp) {
         return acc;
       }
 
@@ -444,20 +452,20 @@ export function getFeesUSD({ config, date }: { config: Config; date: Date }) {
 // Function to calculate the profit in USD
 export function getProfitUSD({
   config,
-  date,
+  timestamp,
   actualPrice,
 }: {
   config: Config;
-  date: Date;
+  timestamp: number;
   actualPrice: number;
 }) {
-  const cacheKey = getCacheKey("getProfitUSD", config, [date]);
+  const cacheKey = getCacheKey("getProfitUSD", config, [timestamp]);
 
   return memoize(cacheKey, () => {
-    const investmentUSD = getDepositsUSD({ config, date });
-    const feesUSD = getFeesUSD({ config, date });
-    const balanceUSD = getNbUSD({ config, date });
-    const tokenToUSD = getNbToken({ config, date }) * actualPrice;
+    const investmentUSD = getDepositsUSD({ config, timestamp });
+    const feesUSD = getFeesUSD({ config, timestamp });
+    const balanceUSD = getNbUSD({ config, timestamp });
+    const tokenToUSD = getNbToken({ config, timestamp }) * actualPrice;
     const totalUSD = balanceUSD + tokenToUSD;
 
     return totalUSD - investmentUSD - feesUSD;
@@ -479,35 +487,31 @@ export function getProfitUSDHistory({
   return memoize(
     cacheKey,
     () => {
-      // Pre-calculate dates to avoid repeated Date object creation
-      const dates = data.map((d) => new Date(d.timestamp));
-
       // Create a map of timestamp to price for quick lookup
-      const priceMap = new Map(
-        data.map((d) => [new Date(d.timestamp).getTime(), d.close])
-      );
+      const priceMap = new Map(data.map((d) => [d.timestamp, d.close]));
 
       // Sort dates to potentially improve cache hits
-      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
 
       // Pre-calculate profits for all dates
       const profits = new Map();
-      for (const date of sortedDates) {
-        const actualPrice = priceMap.get(date.getTime()) || 0;
+      let lastProfitUSD = 0;
+      for (const { timestamp } of sortedData) {
+        const actualPrice = priceMap.get(timestamp) || 0;
 
-        const profitUSD = getProfitUSD({
+        lastProfitUSD = getProfitUSD({
           config,
-          date,
+          timestamp,
           actualPrice,
         });
-        profits.set(date.getTime(), profitUSD);
+        profits.set(timestamp, lastProfitUSD);
       }
 
       // Map the results back to the original data order
-      return data.map((d, index) => {
+      return data.map((d) => {
         return {
           timestamp: d.timestamp,
-          profitUSD: profits.get(dates[index].getTime()),
+          profitUSD: profits.get(d.timestamp),
         };
       });
     },
@@ -518,20 +522,20 @@ export function getProfitUSDHistory({
 // Function to calculate the profit percentage
 export function getProfitPercentage({
   config,
-  date,
+  timestamp,
   actualPrice,
 }: {
   config: Config;
-  date: Date;
+  timestamp: number;
   actualPrice: number;
 }) {
-  const cacheKey = getCacheKey("getProfitPercentage", config, [date]);
+  const cacheKey = getCacheKey("getProfitPercentage", config, [timestamp]);
 
   return memoize(cacheKey, () => {
-    const investmentUSD = getDepositsUSD({ config, date });
-    const feesUSD = getFeesUSD({ config, date });
-    const balanceUSD = getNbUSD({ config, date });
-    const tokenToUSD = getNbToken({ config, date }) * actualPrice;
+    const investmentUSD = getDepositsUSD({ config, timestamp });
+    const feesUSD = getFeesUSD({ config, timestamp });
+    const balanceUSD = getNbUSD({ config, timestamp });
+    const tokenToUSD = getNbToken({ config, timestamp }) * actualPrice;
     const totalUSD = balanceUSD + tokenToUSD;
 
     // Handle the case when investmentUSD is 0 or very small
@@ -561,35 +565,31 @@ export function getProfitPercentageHistory({
   return memoize(
     cacheKey,
     () => {
-      // Pre-calculate dates to avoid repeated Date object creation
-      const dates = data.map((d) => new Date(d.timestamp));
-
       // Create a map of timestamp to price for quick lookup
-      const priceMap = new Map(
-        data.map((d) => [new Date(d.timestamp).getTime(), d.close])
-      );
+      const priceMap = new Map(data.map((d) => [d.timestamp, d.close]));
 
       // Sort dates to potentially improve cache hits
-      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
 
       // Pre-calculate profit percentages for all dates
       const profitPercentages = new Map();
-      for (const date of sortedDates) {
-        const actualPrice = priceMap.get(date.getTime()) || 0;
+      let lastProfitPercentage = 0;
+      for (const { timestamp } of sortedData) {
+        const actualPrice = priceMap.get(timestamp) || 0;
 
-        const profitPercentage = getProfitPercentage({
+        lastProfitPercentage = getProfitPercentage({
           config,
-          date,
+          timestamp,
           actualPrice,
         });
-        profitPercentages.set(date.getTime(), profitPercentage);
+        profitPercentages.set(timestamp, lastProfitPercentage);
       }
 
       // Map the results back to the original data order
-      return data.map((d, index) => {
+      return data.map((d) => {
         return {
           timestamp: d.timestamp,
-          profitPercentage: profitPercentages.get(dates[index].getTime()),
+          profitPercentage: profitPercentages.get(d.timestamp),
         };
       });
     },
@@ -599,17 +599,17 @@ export function getProfitPercentageHistory({
 
 // Function to calculate various metrics
 export function calculateMetrics({
-  endDate,
+  timestamp,
   config,
   data,
 }: {
-  endDate: Date;
+  timestamp: number;
   config: Config;
   data: Data[];
 }) {
   const { transactions } = config;
 
-  const cacheKey = getCacheKey("calculateMetrics", config, [endDate]);
+  const cacheKey = getCacheKey("calculateMetrics", config, [timestamp]);
   // Add a TTL of 5 minutes for metrics data
   const TTL = 5 * 60 * 1000;
 
@@ -617,15 +617,14 @@ export function calculateMetrics({
     cacheKey,
     () => {
       const actualPrice = data[data.length - 1].close;
-      const targetTimestamp = endDate.getTime();
 
       // Use cached values for repeated calculations
-      const balanceUSD = getNbUSD({ config, date: endDate });
-      const investmentUSD = getDepositsUSD({ config, date: endDate });
-      const nbToken = getNbToken({ config, date: endDate });
+      const balanceUSD = getNbUSD({ config, timestamp });
+      const investmentUSD = getDepositsUSD({ config, timestamp });
+      const nbToken = getNbToken({ config, timestamp });
       const tokenToUSD = nbToken * actualPrice;
       const totalUSD = balanceUSD + tokenToUSD;
-      const feesUSD = getFeesUSD({ config, date: endDate });
+      const feesUSD = getFeesUSD({ config, timestamp });
 
       const profitUSD = totalUSD - investmentUSD - feesUSD;
       // Handle the case when investmentUSD is 0 or very small
@@ -644,7 +643,7 @@ export function calculateMetrics({
       // Count transactions in a single pass
       const { nbOfSells, nbOfBuys } = transactions.reduce(
         (acc, transaction) => {
-          if (transaction.date.getTime() <= targetTimestamp) {
+          if (transaction.timestamp <= timestamp) {
             if (transaction.type === "sell") {
               acc.nbOfSells += 1;
             } else if (transaction.type === "buy") {
@@ -658,7 +657,7 @@ export function calculateMetrics({
 
       return {
         drawdown,
-        endDate,
+        timestamp,
         actualPrice,
         balanceUSD,
         feesUSD,

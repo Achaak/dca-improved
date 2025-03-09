@@ -12,15 +12,22 @@ const jsonItem = await getData({
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
-const data = formateData(jsonItem);
+const data = formateData({
+  data: jsonItem,
+  startDate: new Date(config.start_date),
+  endDate: new Date(config.end_date),
+});
 
 // Run the DCA strategy
-const { config: updatedConfig } = await DCA({ config, data });
+const { config: updatedConfig, data: updatedData } = await DCA({
+  config,
+  data,
+});
 
 // Show the statistics
 showMetrics({
   config: updatedConfig,
   data,
-  startDate: new Date(data[0].timestamp),
-  endDate: new Date(data[data.length - 1].timestamp),
+  startTimestamp: updatedData[0].timestamp,
+  endTimestamp: updatedData[updatedData.length - 1].timestamp,
 });

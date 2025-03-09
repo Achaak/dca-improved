@@ -1,16 +1,23 @@
 import { buy, deposit } from "../transaction";
 import type { Config, Data } from "../types";
 import { invalidateCachePrefix } from "../utils/cache";
+import { getDataWithoutPrefetch } from "../utils/data";
 import { generateId } from "../utils/generate-id";
 
-export async function DCA({ config, data }: { config: Config; data: Data[] }) {
+export async function DCA({
+  config,
+  data: dataWithPrefetch,
+}: {
+  config: Config;
+  data: Data[];
+}) {
   if (!config.id) {
     config.id = generateId();
   }
 
-  for (const d of data) {
-    const date = new Date(d.timestamp);
+  const data = getDataWithoutPrefetch({ data: dataWithPrefetch, config });
 
+  for (const d of data) {
     const shouldDeposit =
       (config.deposit_interval === "1d" && d.isDaily) ||
       (config.deposit_interval === "1w" && d.isWeekly) ||
@@ -20,7 +27,7 @@ export async function DCA({ config, data }: { config: Config; data: Data[] }) {
     if (shouldDeposit) {
       deposit({
         amountUSD: config.deposit_value,
-        date,
+        timestamp: d.timestamp,
         config,
       });
     }
@@ -32,7 +39,12 @@ export async function DCA({ config, data }: { config: Config; data: Data[] }) {
       (config.DCA_Interval === "1y" && d.isYearly);
 
     if (shouldProcess) {
-      buy({ amountUSD: config.deposit_value, price: d.close, date, config });
+      buy({
+        amountUSD: config.deposit_value,
+        price: d.close,
+        timestamp: d.timestamp,
+        config,
+      });
     }
   }
 
@@ -41,5 +53,6 @@ export async function DCA({ config, data }: { config: Config; data: Data[] }) {
   return {
     config,
     data,
+    dataWithPrefetch: dataWithPrefetch,
   };
 }

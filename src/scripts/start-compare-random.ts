@@ -27,13 +27,6 @@ const jsonItem = await getData({
   endDate: new Date(config.end_date),
 });
 
-// Pre-parse dates from jsonItem to avoid repeated parsing
-const parsedDates = jsonItem.map((item) => new Date(item.timestamp));
-const originalData = jsonItem.map((item, index) => ({
-  item,
-  date: parsedDates[index],
-}));
-
 const spinner = ora(`Running DCACompare for ${nbOfRuns} runs...`).start();
 
 // Run the comparison for the specified number of runs
@@ -45,16 +38,11 @@ const results = await Promise.all(
     c.start_date = randomDateRange.start_date;
     c.end_date = randomDateRange.end_date;
 
-    // Parse date range once
-    const startDate = new Date(c.start_date);
-    const endDate = new Date(c.end_date);
-
-    // Filter data more efficiently using pre-parsed dates
-    const filteredData = originalData
-      .filter(({ date }) => date >= startDate && date <= endDate)
-      .map(({ item }) => item);
-
-    const data = formateData(filteredData);
+    const data = formateData({
+      data: jsonItem,
+      startDate: new Date(c.start_date),
+      endDate: new Date(c.end_date),
+    });
 
     return await DCACompare(c, data);
   })
@@ -68,13 +56,13 @@ function calculateAverageMetrics(
     data: Data[];
   }[]
 ) {
-  const metrics = results.map((r) =>
-    calculateMetrics({
+  const metrics = results.map((r) => {
+    return calculateMetrics({
       config: r.config,
       data: r.data,
-      endDate: new Date(r.data[r.data.length - 1].timestamp),
-    })
-  );
+      timestamp: r.data[r.data.length - 1].timestamp,
+    });
+  });
 
   return {
     drawdown: {

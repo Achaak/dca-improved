@@ -1,8 +1,14 @@
 import path from "path";
 import ora from "ora";
 import { getHistoricalRates, type JsonItem } from "dukascopy-node";
-import type { Data, Interval } from "../types";
+import type { Config, Data } from "../types";
 import { getIntervalInDays } from "./date";
+import { getCacheKey, memoize } from "./cache";
+
+export const YEARS_PRE_FETCH = 4;
+const YEARS_PRE_FETCH_MS =
+  getIntervalInDays("1y") * YEARS_PRE_FETCH * 24 * 60 * 60 * 1000;
+const DAYS_PRE_FETCH = getIntervalInDays("1y") * YEARS_PRE_FETCH;
 
 export async function getData({
   token,
@@ -20,7 +26,8 @@ export async function getData({
   try {
     const data = await getHistoricalRates({
       dates: {
-        from: startDate,
+        // Fetch 4 years of data before the start date
+        from: new Date(startDate.getTime() - YEARS_PRE_FETCH_MS),
         to: endDate,
       },
       timeframe: "d1",
@@ -38,16 +45,78 @@ export async function getData({
   }
 }
 
-export function formateData(data: JsonItem[]) {
-  const dataFiltered: Data[] = data.map((d, i) => {
-    return {
-      ...d,
-      isYearly: i % getIntervalInDays("1y") === 0,
-      isMonthly: i % getIntervalInDays("1mn") === 0,
-      isWeekly: i % getIntervalInDays("1w") === 0,
-      isDaily: i % getIntervalInDays("1d") === 0,
-    };
-  });
+export function formateData({
+  data,
+  endDate,
+  startDate,
+}: {
+  data: JsonItem[];
+  startDate: Date;
+  endDate: Date;
+}) {
+  // Precalculate constants outside the loop
+  const startTimestamp = startDate.getTime();
+  const minTimestamp = startTimestamp - YEARS_PRE_FETCH_MS;
+  const endTimestamp = endDate.getTime();
+
+  // Precalculate interval days
+  const yearlyInterval = getIntervalInDays("1y");
+  const monthlyInterval = getIntervalInDays("1mn");
+  const weeklyInterval = getIntervalInDays("1w");
+  const dailyInterval = getIntervalInDays("1d");
+
+  // Use a single loop instead of filter + map
+  const dataFiltered: Data[] = [];
+  let validItemIndex = -DAYS_PRE_FETCH; // Track index for interval calculations
+
+  for (const d of data) {
+    const timestamp =
+      typeof d.timestamp === "number"
+        ? d.timestamp
+        : new Date(d.timestamp).getTime();
+
+    // Skip items outside our time range
+    if (timestamp < minTimestamp || timestamp > endTimestamp) {
+      continue;
+    }
+
+    validItemIndex++;
+    const isDataPrefetch = timestamp < startTimestamp;
+
+    if (isDataPrefetch) {
+      dataFiltered.push({
+        ...d,
+        isDataPrefetch,
+        isYearly: false,
+        isMonthly: false,
+        isWeekly: false,
+        isDaily: false,
+      });
+    } else {
+      dataFiltered.push({
+        ...d,
+        isDataPrefetch,
+        isYearly: validItemIndex % yearlyInterval === 0,
+        isMonthly: validItemIndex % monthlyInterval === 0,
+        isWeekly: validItemIndex % weeklyInterval === 0,
+        isDaily: validItemIndex % dailyInterval === 0,
+      });
+    }
+  }
 
   return dataFiltered;
+}
+
+export function getDataWithoutPrefetch({
+  data,
+  config,
+}: {
+  data: Data[];
+  config: Config;
+}) {
+  const cacheKey = getCacheKey("data", config);
+
+  return memoize(cacheKey, () => {
+    return data.filter((d) => !d.isDataPrefetch);
+  });
 }

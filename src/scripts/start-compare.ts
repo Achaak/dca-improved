@@ -13,7 +13,11 @@ const jsonItem = await getData({
   startDate: new Date(config.start_date),
   endDate: new Date(config.end_date),
 });
-const data = formateData(jsonItem);
+const data = formateData({
+  data: jsonItem,
+  startDate: new Date(config.start_date),
+  endDate: new Date(config.end_date),
+});
 
 // Run the DCA comparison
 const { resultDAC, resultDCAImproved } = await DCACompare(config, data);
@@ -21,15 +25,14 @@ const { resultDAC, resultDCAImproved } = await DCACompare(config, data);
 const DCAMetrics = calculateMetrics({
   config: resultDAC.config,
   data: resultDAC.data,
-  endDate: new Date(resultDAC.data[resultDAC.data.length - 1].timestamp),
+  timestamp: resultDAC.data[resultDAC.data.length - 1].timestamp,
 });
 
 const DCAImprovedMetrics = calculateMetrics({
   config: resultDCAImproved.config,
   data: resultDCAImproved.data,
-  endDate: new Date(
-    resultDCAImproved.data[resultDCAImproved.data.length - 1].timestamp
-  ),
+  timestamp:
+    resultDCAImproved.data[resultDCAImproved.data.length - 1].timestamp,
 });
 
 // Log the metrics

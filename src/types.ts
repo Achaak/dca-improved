@@ -4,7 +4,7 @@ export type Transaction =
   | {
       amountToken: number;
       price: number;
-      date: Date;
+      timestamp: number;
       type: "buy";
       // Fee is not included in the amountToken bought
       feeUSD: number;
@@ -12,7 +12,7 @@ export type Transaction =
   | {
       amountToken: number;
       price: number;
-      date: Date;
+      timestamp: number;
       type: "sell";
       // Fee included in the amountToken sold
       feeUSD: number;
@@ -20,7 +20,7 @@ export type Transaction =
 
 export type AccountActivity = {
   amountUSD: number;
-  date: Date;
+  timestamp: number;
   type: "deposit" | "withdraw";
 };
 
@@ -39,9 +39,11 @@ export interface Config {
   id?: string;
 }
 
+//JsonItem without the timestamp
 export interface Data extends JsonItem {
   isYearly: boolean;
   isMonthly: boolean;
   isWeekly: boolean;
   isDaily: boolean;
+  isDataPrefetch: boolean;
 }

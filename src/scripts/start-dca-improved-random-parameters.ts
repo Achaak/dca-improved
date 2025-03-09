@@ -27,71 +27,11 @@ const jsonItem = await getData({
   endDate: new Date(config.end_date),
 });
 
-// Pre-parse dates from jsonItem to avoid repeated parsing
-const parsedDates = jsonItem.map((item) => new Date(item.timestamp));
-const originalData = jsonItem.map((item, index) => ({
-  item,
-  date: parsedDates[index],
-}));
-
-// Create a date index map for faster lookups
-const dateIndexMap = new Map();
-originalData.forEach((item, index) => {
-  dateIndexMap.set(item.date.toISOString().split("T")[0], index);
-});
-
-// Memoize date range filtering
-const dateRangeCache = new Map();
-function getFilteredDataForDateRange(startDate: Date, endDate: Date) {
-  const cacheKey = `${startDate.toISOString()}_${endDate.toISOString()}`;
-
-  if (dateRangeCache.has(cacheKey)) {
-    return dateRangeCache.get(cacheKey);
-  }
-
-  // Use binary search to find start and end indices for better performance
-  let startIdx = 0;
-  let endIdx = originalData.length - 1;
-
-  // Find approximate start index
-  while (startIdx < endIdx) {
-    const mid = Math.floor((startIdx + endIdx) / 2);
-    if (originalData[mid].date < startDate) {
-      startIdx = mid + 1;
-    } else {
-      endIdx = mid;
-    }
-  }
-
-  // Find approximate end index
-  let endSearchIdx = originalData.length - 1;
-  endIdx = startIdx;
-  while (endIdx < endSearchIdx) {
-    const mid = Math.floor((endIdx + endSearchIdx + 1) / 2);
-    if (originalData[mid].date <= endDate) {
-      endIdx = mid;
-    } else {
-      endSearchIdx = mid - 1;
-    }
-  }
-
-  // Get the filtered data
-  const filteredData = originalData
-    .slice(startIdx, endIdx + 1)
-    .map(({ item }) => item);
-
-  // Cache the result
-  dateRangeCache.set(cacheKey, filteredData);
-
-  return filteredData;
-}
-
 type Iteration = {
-  ratioOverToSell: number;
-  ratioUnderToBuy: number;
   sellRatioValue: number;
   profitAvg: number;
   buyRatioValue: number;
+  ratioBetweenSells: number;
 };
 let iterations: Iteration[] = [];
 
@@ -112,10 +52,9 @@ const createCalculateBuyRatio = (buyRatioValue: number) => {
 const BATCH_SIZE = Math.min(nbOfRunsByIteration, 10); // Process in batches of 10 or less
 
 for (let i = 0; i < nbIterations; i++) {
-  const ratioUnderToBuy = random(1, 4);
-  const ratioOverToSell = random(ratioUnderToBuy, Math.max(5, ratioUnderToBuy));
   const sellRatioValue = random(0.05, 1);
-  const buyRatioValue = random(0.05, 1);
+  const buyRatioValue = random(0.1, 1);
+  const ratioBetweenSells = random(0.01, 1);
 
   // Create calculation functions once per iteration
   const calculateSellRatio = createCalculateSellRatio(sellRatioValue);
@@ -139,21 +78,18 @@ for (let i = 0; i < nbIterations; i++) {
         c.start_date = randomDateRange.start_date;
         c.end_date = randomDateRange.end_date;
 
-        // Parse date range once
-        const startDate = new Date(c.start_date);
-        const endDate = new Date(c.end_date);
-
-        // Use the optimized filtering function
-        const filteredData = getFilteredDataForDateRange(startDate, endDate);
-        const data = formateData(filteredData);
+        const data = formateData({
+          data: jsonItem,
+          startDate: new Date(c.start_date),
+          endDate: new Date(c.end_date),
+        });
 
         const result = await DCAImproved({
           config: c,
           data,
-          ratioOverToSell,
-          ratioUnderToBuy,
           calculateSellRatio,
           calculateBuyRatio,
+          ratioBetweenSells,
         });
 
         return result;
@@ -169,7 +105,7 @@ for (let i = 0; i < nbIterations; i++) {
       const lastDataPoint = r.data[r.data.length - 1];
       return getProfitUSD({
         config: r.config,
-        date: new Date(lastDataPoint.timestamp),
+        timestamp: lastDataPoint.timestamp,
         actualPrice: lastDataPoint.close,
       });
     })
@@ -179,11 +115,10 @@ for (let i = 0; i < nbIterations; i++) {
 
   console.log(`Iteration ${i + 1} - Profit avg: ${profitAvg.toFixed(2)}`);
   iterations.push({
-    ratioOverToSell,
-    ratioUnderToBuy,
     sellRatioValue,
     profitAvg,
     buyRatioValue,
+    ratioBetweenSells,
   });
 
   // Use more efficient sorting and slicing
@@ -195,15 +130,9 @@ for (let i = 0; i < nbIterations; i++) {
   console.table(
     iterations.map((i) => ({
       "Profit avg": i.profitAvg.toFixed(2),
-      "Ratio under to buy": i.ratioUnderToBuy.toFixed(2),
-      "Ratio over to sell": i.ratioOverToSell.toFixed(2),
       "Buy ratio value": i.buyRatioValue.toFixed(2),
       "Sell ratio value": i.sellRatioValue.toFixed(2),
+      "Ratio between sells": i.ratioBetweenSells.toFixed(2),
     }))
   );
-
-  // Clear cache if it gets too large to prevent memory issues
-  if (dateRangeCache.size > 1000) {
-    dateRangeCache.clear();
-  }
 }

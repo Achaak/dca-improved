@@ -46,13 +46,13 @@ function logTable(title: string, data: Record<string, any>) {
 export function showMetrics({
   config,
   data,
-  startDate,
-  endDate,
+  startTimestamp,
+  endTimestamp,
 }: {
   config: Config;
   data: Data[];
-  startDate: Date;
-  endDate: Date;
+  startTimestamp: number;
+  endTimestamp: number;
 }) {
   const {
     balanceUSD,
@@ -67,22 +67,26 @@ export function showMetrics({
     drawdown: { peak: drawdownPeak, trough: drawdownTrough },
   } = calculateMetrics({
     config,
-    endDate,
+    timestamp: endTimestamp,
     data,
   });
 
   logTable("📅 Period and Token Information", {
-    Period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+    Period: `${new Date(startTimestamp).toLocaleDateString()} - ${new Date(
+      endTimestamp
+    ).toLocaleDateString()}`,
     Token: config.token.toUpperCase(),
   });
 
   logTable("💰 Balance and Investment Metrics", {
     "Balance (USD)": formatUSD(balanceUSD),
     [`Number of ${config.token.toUpperCase()}`]: formatToken(
-      getNbToken({ config, date: endDate })
+      getNbToken({ config, timestamp: endTimestamp })
     ),
     [`${config.token.toUpperCase()} to USD`]: formatUSD(tokenToUSD),
-    "Average Cost (USD)": formatUSD(getAverageCost({ config, date: endDate })),
+    "Average Cost (USD)": formatUSD(
+      getAverageCost({ config, timestamp: endTimestamp })
+    ),
     "Investment (USD)": formatUSD(investmentUSD),
     "Fees (USD)": formatUSD(feesUSD),
     "Total (USD)": formatUSD(totalUSD),
